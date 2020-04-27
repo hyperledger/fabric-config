@@ -4,7 +4,7 @@
 
 repository:
   name: fabric-config
-  description: Fabric configuration.
+  description: Hyperledger Fabric Packages for channel configuration transactions
   homepage: https://wiki.hyperledger.org/display/fabric
   default_branch: master
   has_downloads: false
