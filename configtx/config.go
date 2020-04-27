@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package config provides utilities to create and modify a channel configuration transaction.
+// Package configtx provides utilities to create and modify a channel configuration transaction.
 // Channel transactions contain the configuration data defining members and policies for a
 // system or application channel and can be used to either create or modify existing channels.
 // Both the creation of a new channel or modification of an existing channel outputs an unsigned
