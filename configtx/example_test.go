@@ -564,6 +564,46 @@ func ExampleConfigTx_SetConsortiumMSP() {
 	}
 }
 
+// This example shows the addition of a new consortium.
+func ExampleConfigTx_SetConsortium() {
+	baseConfig := fetchChannelConfig()
+	c := configtx.New(baseConfig)
+
+	newConsortium := configtx.Consortium{
+		Name: "SampleConsortium2",
+		Organizations: []configtx.Organization{
+			{
+				Name: "Org3MSP",
+				Policies: map[string]configtx.Policy{
+					configtx.ReadersPolicyKey: {
+						Type: configtx.SignaturePolicyType,
+						Rule: "OR('Org3MSP.admin', 'Org3MSP.peer'," +
+							"'Org3MSP.client')",
+					},
+					configtx.WritersPolicyKey: {
+						Type: configtx.SignaturePolicyType,
+						Rule: "OR('Org3MSP.admin', 'Org3MSP.client')",
+					},
+					configtx.AdminsPolicyKey: {
+						Type: configtx.SignaturePolicyType,
+						Rule: "OR('Org3MSP.admin')",
+					},
+					configtx.EndorsementPolicyKey: {
+						Type: configtx.SignaturePolicyType,
+						Rule: "OR('Org3MSP.peer')",
+					},
+				},
+				MSP: baseMSP(&testing.T{}),
+			},
+		},
+	}
+
+	err := c.SetConsortium(newConsortium)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // fetchChannelConfig mocks retrieving the config transaction from the most recent configuration block.
 func fetchChannelConfig() *cb.Config {
 	return &cb.Config{
