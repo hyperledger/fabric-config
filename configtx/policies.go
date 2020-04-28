@@ -13,9 +13,9 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-config/configtx/internal/policydsl"
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	mb "github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/hyperledger/fabric/common/policydsl"
 )
 
 // SetConsortiumChannelCreationPolicy sets the ConsortiumChannelCreationPolicy for
