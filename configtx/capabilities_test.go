@@ -97,13 +97,13 @@ func TestApplicationCapabilities(t *testing.T) {
 
 	c := New(config)
 
-	applicationCapabilities, err := c.ApplicationCapabilities()
+	applicationCapabilities, err := c.OriginalConfig().Application().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(applicationCapabilities).To(Equal(baseApplicationConf.Capabilities))
 
 	// Delete the capabilities key and assert retrieval to return nil
 	delete(config.ChannelGroup.Groups[ApplicationGroupKey].Values, CapabilitiesKey)
-	applicationCapabilities, err = c.ApplicationCapabilities()
+	applicationCapabilities, err = c.OriginalConfig().Application().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(applicationCapabilities).To(BeNil())
 }
@@ -690,7 +690,7 @@ func TestAddApplicationCapability(t *testing.T) {
 
 			c := New(config)
 
-			err = c.AddApplicationCapability(tt.capability)
+			err = c.UpdatedConfig().Application().AddCapability(tt.capability)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			updatedApplicationGroupJSON := bytes.Buffer{}
@@ -755,7 +755,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.AddApplicationCapability(tt.capability)
+			err = c.UpdatedConfig().Application().AddCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -1262,7 +1262,7 @@ func TestRemoveApplicationCapability(t *testing.T) {
 }
 `
 	capability := "V1_3"
-	err = c.RemoveApplicationCapability(capability)
+	err = c.UpdatedConfig().Application().RemoveCapability(capability)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := bytes.Buffer{}
@@ -1324,7 +1324,7 @@ func TestRemoveApplicationCapabilityFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.RemoveApplicationCapability(tt.capability)
+			err = c.UpdatedConfig().Application().RemoveCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
