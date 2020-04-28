@@ -900,6 +900,603 @@ func TestGetConsortiumOrg(t *testing.T) {
 	gt.Expect(org1ConfigGroup).To(Equal(config.ChannelGroup.Groups[ConsortiumsGroupKey].Groups["Consortium1"].Groups["Org1"]))
 }
 
+func TestSetConsortium(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	consortiums := baseConsortiums(t)
+	consortiumsGroup, err := newConsortiumsGroup(consortiums)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				"Consortiums": consortiumsGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	newConsortium := consortiums[0]
+	newConsortium.Name = "Consortium2"
+
+	err = c.SetConsortium(newConsortium)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	org1CertBase64, org1PKBase64, org1CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[0].MSP)
+	org2CertBase64, org2PKBase64, org2CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[1].MSP)
+
+	expectedConfigJSON := fmt.Sprintf(`
+{
+	"channel_group": {
+		"groups": {
+			"Consortiums": {
+				"groups": {
+					"Consortium1": {
+						"groups": {
+							"Org1": {
+								"groups": {},
+								"mod_policy": "Admins",
+								"policies": {
+									"Admins": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Admins"
+											}
+										},
+										"version": "0"
+									},
+									"Endorsement": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Endorsement"
+											}
+										},
+										"version": "0"
+									},
+									"Readers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Readers"
+											}
+										},
+										"version": "0"
+									},
+									"Writers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Writers"
+											}
+										},
+										"version": "0"
+									}
+								},
+								"values": {
+									"MSP": {
+										"mod_policy": "Admins",
+										"value": {
+											"config": {
+												"admins": [
+													"%[1]s"
+												],
+												"crypto_config": {
+													"identity_identifier_hash_function": "SHA256",
+													"signature_hash_family": "SHA3"
+												},
+												"fabric_node_ous": {
+													"admin_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"client_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"enable": false,
+													"orderer_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"peer_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												},
+												"intermediate_certs": [
+													"%[1]s"
+												],
+												"name": "MSPID",
+												"organizational_unit_identifiers": [
+													{
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												],
+												"revocation_list": [
+													"%[2]s"
+												],
+												"root_certs": [
+													"%[1]s"
+												],
+												"signing_identity": {
+													"private_signer": {
+														"key_identifier": "SKI-1",
+														"key_material": "%[3]s"
+													},
+													"public_signer": "%[1]s"
+												},
+												"tls_intermediate_certs": [
+													"%[1]s"
+												],
+												"tls_root_certs": [
+													"%[1]s"
+												]
+											},
+											"type": 0
+										},
+										"version": "0"
+									}
+								},
+								"version": "0"
+							},
+							"Org2": {
+								"groups": {},
+								"mod_policy": "Admins",
+								"policies": {
+									"Admins": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Admins"
+											}
+										},
+										"version": "0"
+									},
+									"Endorsement": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Endorsement"
+											}
+										},
+										"version": "0"
+									},
+									"Readers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Readers"
+											}
+										},
+										"version": "0"
+									},
+									"Writers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Writers"
+											}
+										},
+										"version": "0"
+									}
+								},
+								"values": {
+									"MSP": {
+										"mod_policy": "Admins",
+										"value": {
+											"config": {
+												"admins": [
+													"%[4]s"
+												],
+												"crypto_config": {
+													"identity_identifier_hash_function": "SHA256",
+													"signature_hash_family": "SHA3"
+												},
+												"fabric_node_ous": {
+													"admin_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"client_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"enable": false,
+													"orderer_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"peer_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												},
+												"intermediate_certs": [
+													"%[4]s"
+												],
+												"name": "MSPID",
+												"organizational_unit_identifiers": [
+													{
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												],
+												"revocation_list": [
+													"%[5]s"
+												],
+												"root_certs": [
+													"%[4]s"
+												],
+												"signing_identity": {
+													"private_signer": {
+														"key_identifier": "SKI-1",
+														"key_material": "%[6]s"
+													},
+													"public_signer": "%[4]s"
+												},
+												"tls_intermediate_certs": [
+													"%[4]s"
+												],
+												"tls_root_certs": [
+													"%[4]s"
+												]
+											},
+											"type": 0
+										},
+										"version": "0"
+									}
+								},
+								"version": "0"
+							}
+						},
+						"mod_policy": "/Channel/Orderer/Admins",
+						"policies": {},
+						"values": {
+							"ChannelCreationPolicy": {
+								"mod_policy": "/Channel/Orderer/Admins",
+								"value": {
+									"type": 3,
+									"value": {
+										"rule": "ANY",
+										"sub_policy": "Admins"
+									}
+								},
+								"version": "0"
+							}
+						},
+						"version": "0"
+					},
+					"Consortium2": {
+						"groups": {
+							"Org1": {
+								"groups": {},
+								"mod_policy": "Admins",
+								"policies": {
+									"Admins": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Admins"
+											}
+										},
+										"version": "0"
+									},
+									"Endorsement": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Endorsement"
+											}
+										},
+										"version": "0"
+									},
+									"Readers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Readers"
+											}
+										},
+										"version": "0"
+									},
+									"Writers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Writers"
+											}
+										},
+										"version": "0"
+									}
+								},
+								"values": {
+									"MSP": {
+										"mod_policy": "Admins",
+										"value": {
+											"config": {
+												"admins": [
+													"%[1]s"
+												],
+												"crypto_config": {
+													"identity_identifier_hash_function": "SHA256",
+													"signature_hash_family": "SHA3"
+												},
+												"fabric_node_ous": {
+													"admin_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"client_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"enable": false,
+													"orderer_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"peer_ou_identifier": {
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												},
+												"intermediate_certs": [
+													"%[1]s"
+												],
+												"name": "MSPID",
+												"organizational_unit_identifiers": [
+													{
+														"certificate": "%[1]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												],
+												"revocation_list": [
+													"%[2]s"
+												],
+												"root_certs": [
+													"%[1]s"
+												],
+												"signing_identity": {
+													"private_signer": {
+														"key_identifier": "SKI-1",
+														"key_material": "%[3]s"
+													},
+													"public_signer": "%[1]s"
+												},
+												"tls_intermediate_certs": [
+													"%[1]s"
+												],
+												"tls_root_certs": [
+													"%[1]s"
+												]
+											},
+											"type": 0
+										},
+										"version": "0"
+									}
+								},
+								"version": "0"
+							},
+							"Org2": {
+								"groups": {},
+								"mod_policy": "Admins",
+								"policies": {
+									"Admins": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Admins"
+											}
+										},
+										"version": "0"
+									},
+									"Endorsement": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "MAJORITY",
+												"sub_policy": "Endorsement"
+											}
+										},
+										"version": "0"
+									},
+									"Readers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Readers"
+											}
+										},
+										"version": "0"
+									},
+									"Writers": {
+										"mod_policy": "Admins",
+										"policy": {
+											"type": 3,
+											"value": {
+												"rule": "ANY",
+												"sub_policy": "Writers"
+											}
+										},
+										"version": "0"
+									}
+								},
+								"values": {
+									"MSP": {
+										"mod_policy": "Admins",
+										"value": {
+											"config": {
+												"admins": [
+													"%[4]s"
+												],
+												"crypto_config": {
+													"identity_identifier_hash_function": "SHA256",
+													"signature_hash_family": "SHA3"
+												},
+												"fabric_node_ous": {
+													"admin_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"client_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"enable": false,
+													"orderer_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													},
+													"peer_ou_identifier": {
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												},
+												"intermediate_certs": [
+													"%[4]s"
+												],
+												"name": "MSPID",
+												"organizational_unit_identifiers": [
+													{
+														"certificate": "%[4]s",
+														"organizational_unit_identifier": "OUID"
+													}
+												],
+												"revocation_list": [
+													"%[5]s"
+												],
+												"root_certs": [
+													"%[4]s"
+												],
+												"signing_identity": {
+													"private_signer": {
+														"key_identifier": "SKI-1",
+														"key_material": "%[6]s"
+													},
+													"public_signer": "%[4]s"
+												},
+												"tls_intermediate_certs": [
+													"%[4]s"
+												],
+												"tls_root_certs": [
+													"%[4]s"
+												]
+											},
+											"type": 0
+										},
+										"version": "0"
+									}
+								},
+								"version": "0"
+							}
+						},
+						"mod_policy": "",
+						"policies": {},
+						"values": {},
+						"version": "0"
+					}
+				},
+				"mod_policy": "/Channel/Orderer/Admins",
+				"policies": {
+					"Admins": {
+						"mod_policy": "/Channel/Orderer/Admins",
+						"policy": {
+							"type": 1,
+							"value": {
+								"identities": [],
+								"rule": {
+									"n_out_of": {
+										"n": 0,
+										"rules": []
+									}
+								},
+								"version": 0
+							}
+						},
+						"version": "0"
+					}
+				},
+				"values": {},
+				"version": "0"
+			}
+		},
+		"mod_policy": "",
+		"policies": {},
+		"values": {},
+		"version": "0"
+	},
+	"sequence": "0"
+}
+`, org1CertBase64, org1CRLBase64, org1PKBase64, org2CertBase64, org2CRLBase64, org2PKBase64)
+
+	expectedConfigProto := &cb.Config{}
+	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedConfigJSON), expectedConfigProto)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(proto.Equal(c.UpdatedConfig(), expectedConfigProto)).To(BeTrue())
+}
+
+func TestSetConsortiumFailures(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	consortiums := baseConsortiums(t)
+	consortiumsGroup, err := newConsortiumsGroup(consortiums)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				"Consortiums": consortiumsGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	newConsortium := consortiums[0]
+	newConsortium.Name = ""
+
+	err = c.SetConsortium(newConsortium)
+	gt.Expect(err).To(MatchError("consortium is required"))
+}
+
 func baseConsortiums(t *testing.T) []Consortium {
 	return []Consortium{
 		{
