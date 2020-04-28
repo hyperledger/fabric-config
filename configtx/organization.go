@@ -111,7 +111,7 @@ func newOrgConfigGroup(org Organization) (*cb.ConfigGroup, error) {
 	orgGroup := newConfigGroup()
 	orgGroup.ModPolicy = AdminsPolicyKey
 
-	if err := addPolicies(orgGroup, org.Policies, AdminsPolicyKey); err != nil {
+	if err := setPolicies(orgGroup, org.Policies, AdminsPolicyKey); err != nil {
 		return nil, err
 	}
 

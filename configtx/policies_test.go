@@ -37,7 +37,7 @@ func TestPolicies(t *testing.T) {
 		},
 	}
 	orgGroup := newConfigGroup()
-	err := addPolicies(orgGroup, expectedPolicies, AdminsPolicyKey)
+	err := setPolicies(orgGroup, expectedPolicies, AdminsPolicyKey)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	policies, err := getPolicies(orgGroup.Policies)
@@ -179,7 +179,7 @@ func TestSetApplicationOrgPolicyFailures(t *testing.T) {
 	c := New(config)
 
 	err := c.SetApplicationOrgPolicy("Org1", AdminsPolicyKey, "TestPolicy", Policy{})
-	gt.Expect(err).To(MatchError("failed to add policy 'TestPolicy': unknown policy type: "))
+	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
 func TestSetApplicationPolicy(t *testing.T) {
@@ -247,7 +247,7 @@ func TestSetApplicationPolicyFailures(t *testing.T) {
 	expectedPolicies["TestPolicy"] = expectedPolicies[EndorsementPolicyKey]
 
 	err = c.SetApplicationPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
-	gt.Expect(err).To(MatchError("failed to add policy 'TestPolicy': unknown policy type: "))
+	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
 func TestRemoveApplicationPolicy(t *testing.T) {
@@ -398,11 +398,11 @@ func TestSetConsortiumOrgPolicyFailures(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name:        "When adding empty policy fails",
+			name:        "When setting empty policy fails",
 			consortium:  "Consortium1",
 			org:         "Org1",
 			policy:      Policy{},
-			expectedErr: "failed to add policy 'TestPolicy' to consortium org 'Org1': unknown policy type: ",
+			expectedErr: "failed to set policy 'TestPolicy' to consortium org 'Org1': unknown policy type: ",
 		},
 	} {
 		err := c.SetConsortiumOrgPolicy(test.consortium, test.org, "TestPolicy", test.policy)
@@ -532,7 +532,7 @@ func TestSetOrdererPolicyFailures(t *testing.T) {
 	c := New(config)
 
 	err = c.SetOrdererPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
-	gt.Expect(err).To(MatchError("failed to add policy 'TestPolicy': unknown policy type: "))
+	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
 func TestRemoveOrdererPolicy(t *testing.T) {
@@ -916,7 +916,7 @@ func TestRemoveChannelPolicy(t *testing.T) {
 		ChannelGroup: channel,
 	}
 	policies := standardPolicies()
-	err = addPolicies(channel, policies, AdminsPolicyKey)
+	err = setPolicies(channel, policies, AdminsPolicyKey)
 	gt.Expect(err).NotTo(HaveOccurred())
 	c := New(config)
 
@@ -954,7 +954,7 @@ func TestRemoveChannelPolicyFailures(t *testing.T) {
 		ChannelGroup: channel,
 	}
 	policies := standardPolicies()
-	err = addPolicies(channel, policies, AdminsPolicyKey)
+	err = setPolicies(channel, policies, AdminsPolicyKey)
 	gt.Expect(err).NotTo(HaveOccurred())
 	channel.Policies[ReadersPolicyKey] = &cb.ConfigPolicy{
 		Policy: &cb.Policy{
