@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-config/protolator"
+	"github.com/hyperledger/fabric-config/protolator/protoext/peerext"
 	cb "github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric/common/tools/protolator"
-	"github.com/hyperledger/fabric/common/tools/protolator/protoext/peerext"
 	. "github.com/onsi/gomega"
 )
 
@@ -512,7 +512,7 @@ func TestRemoveAnchorPeerFailure(t *testing.T) {
 			orgName:            "Org1",
 			anchorPeerToRemove: Address{Host: "host1", Port: 123},
 			configValues:       map[string]*cb.ConfigValue{AnchorPeersKey: {Value: []byte("a little fire")}},
-			expectedErr:        "failed unmarshaling anchor peer endpoints for org Org1: proto:\u00a0cannot parse reserved wire type",
+			expectedErr:        "failed unmarshaling anchor peer endpoints for org Org1: proto: cannot parse reserved wire type",
 		},
 	}
 
