@@ -57,26 +57,6 @@ func (c *ConfigTx) ConsortiumOrgPolicies(consortiumName, orgName string) (map[st
 	return getPolicies(org.Policies)
 }
 
-// OrdererPolicies returns a map of policies for channel orderer.
-func (c *ConfigTx) OrdererPolicies() (map[string]Policy, error) {
-	orderer, ok := c.original.ChannelGroup.Groups[OrdererGroupKey]
-	if !ok {
-		return nil, errors.New("orderer missing from config")
-	}
-
-	return getPolicies(orderer.Policies)
-}
-
-// OrdererOrgPolicies returns a map of policies for a specific org.
-func (c *ConfigTx) OrdererOrgPolicies(orgName string) (map[string]Policy, error) {
-	org, ok := c.original.ChannelGroup.Groups[OrdererGroupKey].Groups[orgName]
-	if !ok {
-		return nil, fmt.Errorf("orderer org %s does not exist in channel config", orgName)
-	}
-
-	return getPolicies(org.Policies)
-}
-
 // ApplicationPolicies returns a map of policies for application config group.
 // Retrieval will panic if application group does not exist.
 func (c *ConfigTx) ApplicationPolicies() (map[string]Policy, error) {
@@ -165,49 +145,6 @@ func (c *ConfigTx) RemoveConsortiumOrgPolicy(consortiumName, orgName, policyName
 
 	delete(orgGroup.Policies, policyName)
 
-}
-
-// SetOrdererPolicy sets the specified policy in the orderer group's config policy map.
-// If the policy already exist in current configuration, its value will be overwritten.
-func (c *ConfigTx) SetOrdererPolicy(modPolicy, policyName string, policy Policy) error {
-	err := setPolicy(c.updated.ChannelGroup.Groups[OrdererGroupKey], modPolicy, policyName, policy)
-	if err != nil {
-		return fmt.Errorf("failed to set policy '%s': %v", policyName, err)
-	}
-
-	return nil
-}
-
-// RemoveOrdererPolicy removes an existing orderer policy configuration.
-func (c *ConfigTx) RemoveOrdererPolicy(policyName string) error {
-	if policyName == BlockValidationPolicyKey {
-		return errors.New("BlockValidation policy must be defined")
-	}
-
-	policies, err := c.OrdererPolicies()
-	if err != nil {
-		return err
-	}
-
-	removePolicy(c.updated.ChannelGroup.Groups[OrdererGroupKey], policyName, policies)
-	return nil
-}
-
-// SetOrdererOrgPolicy sets the specified policy in the orderer org group's config policy map.
-// If the policy already exist in current configuration, its value will be overwritten.
-func (c *ConfigTx) SetOrdererOrgPolicy(orgName, modPolicy, policyName string, policy Policy) error {
-	return setPolicy(c.updated.ChannelGroup.Groups[OrdererGroupKey].Groups[orgName], modPolicy, policyName, policy)
-}
-
-// RemoveOrdererOrgPolicy removes an existing policy from an orderer organization.
-func (c *ConfigTx) RemoveOrdererOrgPolicy(orgName, policyName string) error {
-	policies, err := c.OrdererOrgPolicies(orgName)
-	if err != nil {
-		return err
-	}
-
-	removePolicy(c.updated.ChannelGroup.Groups[OrdererGroupKey].Groups[orgName], policyName, policies)
-	return nil
 }
 
 // SetChannelPolicy sets the specified policy in the channel group's config policy map.

@@ -162,7 +162,7 @@ func (c *ConfigTx) SetACLs(acls map[string]string) error {
 // Specifying acls that do not exist in the application ConfigGroup of the channel config will not return a error.
 // Removal will panic if application group does not exist.
 func (c *ConfigTx) RemoveACLs(acls []string) error {
-	configACLs, err := getACLs(c.updated)
+	configACLs, err := getACLs(c.updated.Config)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (c *ConfigTx) RemoveACLs(acls []string) error {
 // ApplicationACLs returns a map of application acls from a config transaction.
 // Retrieval will panic if application group does not exist.
 func (c *ConfigTx) ApplicationACLs() (map[string]string, error) {
-	return getACLs(c.original)
+	return getACLs(c.original.Config)
 }
 
 // getACLs returns a map of ACLS for given config application.

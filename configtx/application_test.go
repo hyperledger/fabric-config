@@ -362,7 +362,7 @@ func TestAddAnchorPeer(t *testing.T) {
 	err = c.AddAnchorPeer("Org2", newOrg2AnchorPeer)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(proto.Equal(c.UpdatedConfig(), expectedUpdatedConfig)).To(BeTrue())
+	gt.Expect(proto.Equal(c.UpdatedConfig().Config, expectedUpdatedConfig)).To(BeTrue())
 }
 
 func TestRemoveAnchorPeer(t *testing.T) {
@@ -495,7 +495,7 @@ func TestRemoveAnchorPeer(t *testing.T) {
 	err = c.RemoveAnchorPeer("Org1", anchorPeer1)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(proto.Equal(c.UpdatedConfig(), expectedUpdatedConfig)).To(BeTrue())
+	gt.Expect(proto.Equal(c.UpdatedConfig().Config, expectedUpdatedConfig)).To(BeTrue())
 }
 
 func TestRemoveAnchorPeerFailure(t *testing.T) {
@@ -574,7 +574,7 @@ func TestAnchorPeers(t *testing.T) {
 	err = c.AddAnchorPeer("Org1", expectedAnchorPeer)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	c = New(c.UpdatedConfig())
+	c = New(c.UpdatedConfig().Config)
 
 	anchorPeers, err = c.AnchorPeers("Org1")
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -586,7 +586,7 @@ func TestAnchorPeers(t *testing.T) {
 
 	// create new configtx with the updated config to test final anchor peers
 	// to ensure a nil slice is returned when all anchor peers are removed
-	c = New(c.UpdatedConfig())
+	c = New(c.UpdatedConfig().Config)
 
 	anchorPeers, err = c.AnchorPeers("Org1")
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -696,11 +696,11 @@ func TestSetACL(t *testing.T) {
 				gt.Expect(err).To(MatchError(tt.expectedErr))
 			} else {
 				gt.Expect(err).NotTo(HaveOccurred())
-				acls, err := getACLs(c.updated)
+				acls, err := getACLs(c.updated.Config)
 				gt.Expect(err).NotTo(HaveOccurred())
 				gt.Expect(acls).To(Equal(tt.expectedACL))
 
-				originalACLs, err := getACLs(c.original)
+				originalACLs, err := getACLs(c.original.Config)
 				gt.Expect(err).NotTo(HaveOccurred())
 				gt.Expect(originalACLs).To(Equal(expectedOriginalACL))
 			}
@@ -765,7 +765,7 @@ func TestRemoveACL(t *testing.T) {
 				gt.Expect(err).To(MatchError(tt.expectedErr))
 			} else {
 				gt.Expect(err).NotTo(HaveOccurred())
-				acls, err := getACLs(c.UpdatedConfig())
+				acls, err := getACLs(c.UpdatedConfig().Config)
 				gt.Expect(err).NotTo(HaveOccurred())
 				gt.Expect(acls).To(Equal(tt.expectedACL))
 			}
@@ -1003,7 +1003,7 @@ func TestApplicationConfiguration(t *testing.T) {
 		gt.Expect(err).NotTo(HaveOccurred())
 	}
 
-	c = New(c.UpdatedConfig())
+	c = New(c.UpdatedConfig().Config)
 
 	applicationConfig, err := c.ApplicationConfiguration()
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -1066,7 +1066,7 @@ func TestApplicationConfigurationFailure(t *testing.T) {
 				tt.configMod(c, baseApplicationConf, gt)
 			}
 
-			c = New(c.UpdatedConfig())
+			c = New(c.UpdatedConfig().Config)
 
 			_, err = c.ApplicationConfiguration()
 			gt.Expect(err).To(MatchError(tt.expectedErr))

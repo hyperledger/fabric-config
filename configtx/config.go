@@ -78,28 +78,41 @@ type standardConfigPolicy struct {
 // ConfigTx wraps a config transaction.
 type ConfigTx struct {
 	// original state of the config
-	original *cb.Config
+	original *OriginalConfig
 	// modified state of the config
-	updated *cb.Config
+	updated *UpdatedConfig
 }
 
 // New creates a new ConfigTx from a Config protobuf.
 // New will panic if given an empty config.
 func New(config *cb.Config) ConfigTx {
 	return ConfigTx{
-		original: config,
+		original: &OriginalConfig{Config: config},
 		// Clone the base config for processing updates
-		updated: proto.Clone(config).(*cb.Config),
+		updated: &UpdatedConfig{Config: proto.Clone(config).(*cb.Config)},
 	}
 }
 
-// OriginalConfig returns the original unedited config.
-func (c *ConfigTx) OriginalConfig() *cb.Config {
+// OriginalConfig wraps the original state of the config
+// and implements functions for retrieving values on it.
+type OriginalConfig struct {
+	*cb.Config
+}
+
+// UpdatedConfig wraps the modified state of the config
+// and implements functions for retrieving and setting values
+// on it.
+type UpdatedConfig struct {
+	*cb.Config
+}
+
+// OriginalConfig returns the original state of the config.
+func (c *ConfigTx) OriginalConfig() *OriginalConfig {
 	return c.original
 }
 
-// UpdatedConfig returns the modified config.
-func (c *ConfigTx) UpdatedConfig() *cb.Config {
+// UpdatedConfig returns the modified state of the config
+func (c *ConfigTx) UpdatedConfig() *UpdatedConfig {
 	return c.updated
 }
 
@@ -109,7 +122,7 @@ func (c *ConfigTx) ComputeUpdate(channelID string) (*cb.ConfigUpdate, error) {
 		return nil, errors.New("channel ID is required")
 	}
 
-	updt, err := computeConfigUpdate(c.original, c.updated)
+	updt, err := computeConfigUpdate(c.original.Config, c.updated.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute update: %v", err)
 	}
@@ -148,7 +161,7 @@ func (c *ConfigTx) ChannelConfiguration() (Channel, error) {
 	}
 
 	if _, ok := channelGroup.Groups[OrdererGroupKey]; ok {
-		orderer, err = c.OrdererConfiguration()
+		orderer, err = c.OriginalConfig().Orderer().Configuration()
 		if err != nil {
 			return Channel{}, err
 		}
@@ -274,7 +287,7 @@ func newSystemChannelGroup(channelConfig Channel) (*cb.ConfigGroup, error) {
 
 	err = setPolicies(channelGroup, channelConfig.Policies, AdminsPolicyKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set system channel policies: %v", err)
+		return nil, fmt.Errorf("failed to add system channel policies: %v", err)
 	}
 
 	err = setValue(channelGroup, hashingAlgorithmValue(), AdminsPolicyKey)

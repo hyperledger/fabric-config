@@ -1132,7 +1132,7 @@ func TestComputeUpdate(t *testing.T) {
 
 	value1Name := "foo"
 	value2Name := "bar"
-	base := &cb.Config{
+	original := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
 			Version: 7,
 			Values: map[string]*cb.ConfigValue{
@@ -1150,7 +1150,7 @@ func TestComputeUpdate(t *testing.T) {
 	updated := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
 			Values: map[string]*cb.ConfigValue{
-				value1Name: base.ChannelGroup.Values[value1Name],
+				value1Name: original.ChannelGroup.Values[value1Name],
 				value2Name: {
 					Value: []byte("updatedValued2Value"),
 				},
@@ -1159,8 +1159,8 @@ func TestComputeUpdate(t *testing.T) {
 	}
 
 	c := ConfigTx{
-		original: base,
-		updated:  updated,
+		original: &OriginalConfig{Config: original},
+		updated:  &UpdatedConfig{Config: updated},
 	}
 
 	channelID := "testChannel"
@@ -1191,12 +1191,12 @@ func TestComputeUpdate(t *testing.T) {
 func TestComputeUpdateFailures(t *testing.T) {
 	t.Parallel()
 
-	base := &cb.Config{}
+	original := &cb.Config{}
 	updated := &cb.Config{}
 
 	c := ConfigTx{
-		original: base,
-		updated:  updated,
+		original: &OriginalConfig{Config: original},
+		updated:  &UpdatedConfig{Config: updated},
 	}
 
 	for _, test := range []struct {
