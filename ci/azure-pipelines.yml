@@ -17,7 +17,7 @@ variables:
 pool:
   vmImage: ubuntu-18.04
 container:
-  image: sykesm/fabric-chaincode-go:0.2
+  image: btl5037/ci
 
 steps:
   - checkout: self

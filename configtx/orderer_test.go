@@ -15,9 +15,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/configtx/orderer"
+	"github.com/hyperledger/fabric-config/protolator"
+	"github.com/hyperledger/fabric-config/protolator/protoext/ordererext"
 	cb "github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric/common/tools/protolator"
-	"github.com/hyperledger/fabric/common/tools/protolator/protoext/ordererext"
 	. "github.com/onsi/gomega"
 )
 
@@ -1797,7 +1797,7 @@ func TestRemoveOrdererEndpointFailure(t *testing.T) {
 	c := New(config)
 
 	err := c.RemoveOrdererEndpoint("OrdererOrg", Address{Host: "127.0.0.1", Port: 8050})
-	gt.Expect(err).To(MatchError("failed unmarshaling orderer org OrdererOrg's endpoints: proto:\u00a0cannot parse reserved wire type"))
+	gt.Expect(err).To(MatchError("failed unmarshaling orderer org OrdererOrg's endpoints: proto: cannot parse reserved wire type"))
 }
 
 func TestGetOrdererOrg(t *testing.T) {

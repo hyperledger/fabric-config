@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hyperledger/fabric-config/protolator"
+	"github.com/hyperledger/fabric-config/protolator/protoext/commonext"
+	"github.com/hyperledger/fabric-config/protolator/protoext/ordererext"
+	"github.com/hyperledger/fabric-config/protolator/protoext/peerext"
 	cb "github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric/common/tools/protolator"
-	"github.com/hyperledger/fabric/common/tools/protolator/protoext/commonext"
-	"github.com/hyperledger/fabric/common/tools/protolator/protoext/ordererext"
-	"github.com/hyperledger/fabric/common/tools/protolator/protoext/peerext"
 	. "github.com/onsi/gomega"
 )
 
@@ -173,7 +173,7 @@ func TestSetChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto:\u00a0cannot parse reserved wire type",
+			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
 		},
 	}
 
@@ -466,7 +466,7 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto:\u00a0cannot parse reserved wire type",
+			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
 		},
 	}
 
@@ -735,7 +735,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto:\u00a0cannot parse reserved wire type",
+			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
 		},
 	}
 
@@ -849,7 +849,7 @@ func TestRemoveChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto:\u00a0cannot parse reserved wire type",
+			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
 		},
 	}
 
@@ -1146,7 +1146,7 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto:\u00a0cannot parse reserved wire type",
+			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
 		},
 	}
 
@@ -1310,7 +1310,7 @@ func TestRemoveApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto:\u00a0cannot parse reserved wire type",
+			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
 		},
 	}
 
