@@ -361,11 +361,11 @@ func TestSetConsortiumOrgPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.SetConsortiumOrgPolicy("Consortium1", "Org1", "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
+	consortium1Org1 := c.UpdatedConfig().Consortiums().Consortium("Consortium1").Organization("Org1")
+	err = consortium1Org1.SetPolicy("TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	consortium1Org1 := c.updated.ChannelGroup.Groups[ConsortiumsGroupKey].Groups["Consortium1"].Groups["Org1"]
-	updatedPolicies, err := getPolicies(consortium1Org1.Policies)
+	updatedPolicies, err := consortium1Org1.Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -405,7 +405,7 @@ func TestSetConsortiumOrgPolicyFailures(t *testing.T) {
 			expectedErr: "failed to set policy 'TestPolicy' to consortium org 'Org1': unknown policy type: ",
 		},
 	} {
-		err := c.SetConsortiumOrgPolicy(test.consortium, test.org, "TestPolicy", test.policy)
+		err := c.UpdatedConfig().Consortiums().Consortium(test.consortium).Organization(test.org).SetPolicy("TestPolicy", test.policy)
 		gt.Expect(err).To(MatchError(test.expectedErr))
 	}
 }
@@ -451,10 +451,10 @@ func TestRemoveConsortiumOrgPolicy(t *testing.T) {
 		},
 	}
 
-	c.RemoveConsortiumOrgPolicy("Consortium1", "Org1", "TestPolicy")
+	consortium1Org1 := c.UpdatedConfig().Consortiums().Consortium("Consortium1").Organization("Org1")
+	consortium1Org1.RemovePolicy("TestPolicy")
 
-	consortium1Org1 := c.UpdatedConfig().ChannelGroup.Groups[ConsortiumsGroupKey].Groups["Consortium1"].Groups["Org1"]
-	updatedPolicies, err := getPolicies(consortium1Org1.Policies)
+	updatedPolicies, err := consortium1Org1.Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -783,11 +783,11 @@ func TestSetConsortiumChannelCreationPolicy(t *testing.T) {
 
 	updatedPolicy := Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Admins"}
 
-	err = c.SetConsortiumChannelCreationPolicy("Consortium1", updatedPolicy)
+	consortium1 := c.UpdatedConfig().Consortiums().Consortium("Consortium1")
+	err = consortium1.SetChannelCreationPolicy(updatedPolicy)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	consortium := c.UpdatedConfig().ChannelGroup.Groups[ConsortiumsGroupKey].Groups["Consortium1"]
-	creationPolicy := consortium.Values[ChannelCreationPolicyKey]
+	creationPolicy := consortium1.consortiumGroup.Values[ChannelCreationPolicyKey]
 	policy := &cb.Policy{}
 	err = proto.Unmarshal(creationPolicy.Value, policy)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -836,7 +836,7 @@ func TestSetConsortiumChannelCreationPolicyFailures(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
-			err := c.SetConsortiumChannelCreationPolicy(tt.consortiumName, tt.updatedpolicy)
+			err := c.UpdatedConfig().Consortiums().Consortium(tt.consortiumName).SetChannelCreationPolicy(tt.updatedpolicy)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -971,56 +971,7 @@ func TestConsortiumOrgPolicies(t *testing.T) {
 		},
 	}
 
-	policies, err := c.ConsortiumOrgPolicies("Consortium1", "Org1")
+	policies, err := c.UpdatedConfig().Consortiums().Consortium("Consortium1").Organization("Org1").Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(policies).To(Equal(expectedPolicies))
-}
-
-func TestConsortiumOrgPoliciesFailures(t *testing.T) {
-	t.Parallel()
-
-	gt := NewGomegaWithT(t)
-
-	consortiums, _ := baseConsortiums(t)
-
-	consortiumsGroup, err := newConsortiumsGroup(consortiums)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	config := &cb.Config{
-		ChannelGroup: &cb.ConfigGroup{
-			Groups: map[string]*cb.ConfigGroup{
-				ConsortiumsGroupKey: consortiumsGroup,
-			},
-		},
-	}
-
-	c := New(config)
-
-	tests := []struct {
-		testName       string
-		consortiumName string
-		orgName        string
-		expectedErr    string
-	}{
-		{
-			testName:       "when consortium does not exist",
-			consortiumName: "BadConsortium",
-			orgName:        "Org1",
-			expectedErr:    "consortium BadConsortium does not exist in channel config",
-		},
-		{
-			testName:       "when org does not exist",
-			consortiumName: "Consortium1",
-			orgName:        "BadOrg",
-			expectedErr:    "consortium org BadOrg does not exist in channel config",
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.testName, func(t *testing.T) {
-			_, err = c.ConsortiumOrgPolicies(tt.consortiumName, tt.orgName)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
-		})
-	}
 }
