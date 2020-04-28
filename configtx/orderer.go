@@ -274,7 +274,7 @@ func newOrdererGroup(orderer Orderer) (*cb.ConfigGroup, error) {
 	ordererGroup := newConfigGroup()
 	ordererGroup.ModPolicy = AdminsPolicyKey
 
-	if err := addOrdererPolicies(ordererGroup, orderer.Policies, AdminsPolicyKey); err != nil {
+	if err := setOrdererPolicies(ordererGroup, orderer.Policies, AdminsPolicyKey); err != nil {
 		return nil, err
 	}
 
@@ -353,9 +353,9 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 	return nil
 }
 
-// addOrdererPolicies adds *cb.ConfigPolicies to the passed Orderer *cb.ConfigGroup's Policies map.
+// setOrdererPolicies sets *cb.ConfigPolicies to the passed Orderer *cb.ConfigGroup's Policies map.
 // It checks that the BlockValidation policy is defined alongside the standard policy checks.
-func addOrdererPolicies(cg *cb.ConfigGroup, policyMap map[string]Policy, modPolicy string) error {
+func setOrdererPolicies(cg *cb.ConfigGroup, policyMap map[string]Policy, modPolicy string) error {
 	if policyMap == nil {
 		return errors.New("no policies defined")
 	}
@@ -363,7 +363,7 @@ func addOrdererPolicies(cg *cb.ConfigGroup, policyMap map[string]Policy, modPoli
 		return errors.New("no BlockValidation policy defined")
 	}
 
-	return addPolicies(cg, policyMap, modPolicy)
+	return setPolicies(cg, policyMap, modPolicy)
 }
 
 // batchSizeValue returns the config definition for the orderer batch size.

@@ -272,9 +272,9 @@ func newSystemChannelGroup(channelConfig Channel) (*cb.ConfigGroup, error) {
 
 	channelGroup := newConfigGroup()
 
-	err = addPolicies(channelGroup, channelConfig.Policies, AdminsPolicyKey)
+	err = setPolicies(channelGroup, channelConfig.Policies, AdminsPolicyKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add system channel policies: %v", err)
+		return nil, fmt.Errorf("failed to set system channel policies: %v", err)
 	}
 
 	if len(channelConfig.Orderer.Addresses) == 0 {
