@@ -369,6 +369,9 @@ func parseCertificateListFromBytes(certs [][]byte) ([]*x509.Certificate, error) 
 
 func parseCertificateFromBytes(cert []byte) (*x509.Certificate, error) {
 	pemBlock, _ := pem.Decode(cert)
+	if pemBlock == nil {
+		return &x509.Certificate{}, fmt.Errorf("no PEM data found in cert[% x]", cert)
+	}
 
 	certificate, err := x509.ParseCertificate(pemBlock.Bytes)
 	if err != nil {
@@ -383,6 +386,9 @@ func parseCRL(crls [][]byte) ([]*pkix.CertificateList, error) {
 
 	for _, crl := range crls {
 		pemBlock, _ := pem.Decode(crl)
+		if pemBlock == nil {
+			return certificateLists, fmt.Errorf("no PEM data found in CRL[% x]", crl)
+		}
 
 		certificateList, err := x509.ParseCRL(pemBlock.Bytes)
 		if err != nil {
@@ -401,6 +407,9 @@ func parsePrivateKeyFromBytes(priv []byte) (crypto.PrivateKey, error) {
 	}
 
 	pemBlock, _ := pem.Decode(priv)
+	if pemBlock == nil {
+		return nil, fmt.Errorf("no PEM data found in private key[% x]", priv)
+	}
 
 	privateKey, err := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
 	if err != nil {
