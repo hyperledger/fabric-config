@@ -173,7 +173,7 @@ func TestSetChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
+			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -466,7 +466,7 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
+			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -735,7 +735,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
+			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -849,7 +849,7 @@ func TestRemoveChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
+			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -1146,7 +1146,7 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
+			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -1310,7 +1310,7 @@ func TestRemoveApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: cannot parse reserved wire type",
+			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
