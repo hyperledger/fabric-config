@@ -512,7 +512,7 @@ func TestRemoveAnchorPeerFailure(t *testing.T) {
 			orgName:            "Org1",
 			anchorPeerToRemove: Address{Host: "host1", Port: 123},
 			configValues:       map[string]*cb.ConfigValue{AnchorPeersKey: {Value: []byte("a little fire")}},
-			expectedErr:        "failed unmarshaling anchor peer endpoints for org Org1: proto: cannot parse reserved wire type",
+			expectedErr:        "failed unmarshaling anchor peer endpoints for org Org1: proto: can't skip unknown wire type 6",
 		},
 	}
 

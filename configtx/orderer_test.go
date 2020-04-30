@@ -1797,7 +1797,7 @@ func TestRemoveOrdererEndpointFailure(t *testing.T) {
 	c := New(config)
 
 	err := c.RemoveOrdererEndpoint("OrdererOrg", Address{Host: "127.0.0.1", Port: 8050})
-	gt.Expect(err).To(MatchError("failed unmarshaling orderer org OrdererOrg's endpoints: proto: cannot parse reserved wire type"))
+	gt.Expect(err).To(MatchError("failed unmarshaling orderer org OrdererOrg's endpoints: proto: can't skip unknown wire type 6"))
 }
 
 func TestGetOrdererOrg(t *testing.T) {
