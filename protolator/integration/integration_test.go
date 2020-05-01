@@ -18,18 +18,20 @@ import (
 	mb "github.com/hyperledger/fabric-protos-go/msp"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func bidirectionalMarshal(t *testing.T, doc proto.Message) {
+	gt := NewGomegaWithT(t)
+
 	var buffer bytes.Buffer
 
-	assert.NoError(t, protolator.DeepMarshalJSON(&buffer, doc))
+	err := protolator.DeepMarshalJSON(&buffer, doc)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	newRoot := proto.Clone(doc)
 	newRoot.Reset()
-	assert.NoError(t, protolator.DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newRoot))
+	err = protolator.DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newRoot)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	// Note, we cannot do an equality check between newRoot and sampleDoc
 	// because of the nondeterministic nature of binary proto marshaling
@@ -40,27 +42,30 @@ func bidirectionalMarshal(t *testing.T, doc proto.Message) {
 	//t.Log(newRoot)
 
 	var remarshaled bytes.Buffer
-	assert.NoError(t, protolator.DeepMarshalJSON(&remarshaled, newRoot))
-	assert.Equal(t, buffer.String(), remarshaled.String())
+	err = protolator.DeepMarshalJSON(&remarshaled, newRoot)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(remarshaled.String()).To(Equal(buffer.String()))
 	//t.Log(buffer.String())
 	//t.Log(remarshaled.String())
 }
 
 func TestConfigUpdate(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	blockBin, err := ioutil.ReadFile("testdata/block.pb")
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	block := &cb.Block{}
 	err = proto.Unmarshal(blockBin, block)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	blockDataPayload := &cb.Payload{}
 	err = proto.Unmarshal(block.Data.Data[0], blockDataPayload)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{}
 	err = proto.Unmarshal(blockDataPayload.Data, config)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	bidirectionalMarshal(t, &cb.ConfigUpdateEnvelope{
 		ConfigUpdate: protoMarshalOrPanic(&cb.ConfigUpdate{
@@ -80,17 +85,21 @@ func TestIdemix(t *testing.T) {
 }
 
 func TestBlock(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	blockBin, err := ioutil.ReadFile("testdata/block.pb")
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	block := &cb.Block{}
 	err = proto.Unmarshal(blockBin, block)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	bidirectionalMarshal(t, block)
 }
 
 func TestEmitDefaultsBug(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	block := &cb.Block{
 		Header: &cb.BlockHeader{
 			PreviousHash: []byte("foo"),
@@ -112,12 +121,14 @@ func TestEmitDefaultsBug(t *testing.T) {
 	}
 
 	err := protolator.DeepMarshalJSON(os.Stdout, block)
-	assert.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 }
 
 func TestProposalResponsePayload(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	prp := &pb.ProposalResponsePayload{}
-	assert.NoError(t, protolator.DeepUnmarshalJSON(bytes.NewReader([]byte(`{
+	err := protolator.DeepUnmarshalJSON(bytes.NewReader([]byte(`{
             "extension": {
               "chaincode_id": {
                 "name": "test",
@@ -220,7 +231,8 @@ func TestProposalResponsePayload(t *testing.T) {
                 ]
               }
             }
-        }`)), prp))
+        }`)), prp)
+	gt.Expect(err).NotTo(HaveOccurred())
 	bidirectionalMarshal(t, prp)
 }
 
@@ -247,6 +259,8 @@ func TestChannelCreationPolicy(t *testing.T) {
 }
 
 func TestStaticMarshal(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	// To generate artifacts:
 	// e.g.
 	//  FABRICPATH=$GOPATH/src/github.com/hyperledger/fabric
@@ -254,19 +268,18 @@ func TestStaticMarshal(t *testing.T) {
 	// 	configtxgen -configPath FABRICPATH/sampleconfig -inspectBlock block.pb > block.json
 
 	blockBin, err := ioutil.ReadFile("testdata/block.pb")
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	block := &cb.Block{}
 	err = proto.Unmarshal(blockBin, block)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	jsonBin, err := ioutil.ReadFile("testdata/block.json")
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := &bytes.Buffer{}
-	require.NoError(t, protolator.DeepMarshalJSON(buf, block))
-
-	gt := NewGomegaWithT(t)
+	err = protolator.DeepMarshalJSON(buf, block)
+	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(buf).To(MatchJSON(jsonBin))
 }
 

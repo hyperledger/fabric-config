@@ -21,10 +21,13 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-config/protolator/testprotos"
-	"github.com/stretchr/testify/assert"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestPlainNestedMsg(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tppff := &testProtoPlainFieldFactory{
@@ -42,20 +45,26 @@ func TestPlainNestedMsg(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 	newMsg := &testprotos.NestedMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.NotEqual(t, fromPrefix+toPrefix+startMsg.PlainNestedField.PlainField, newMsg.PlainNestedField.PlainField)
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(newMsg.PlainNestedField.PlainField).NotTo(Equal(fromPrefix + toPrefix + startMsg.PlainNestedField.PlainField))
 
 	fieldFactories = []protoFieldFactory{tppff, nestedFieldFactory{}}
 
 	buffer.Reset()
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.Equal(t, fromPrefix+toPrefix+startMsg.PlainNestedField.PlainField, newMsg.PlainNestedField.PlainField)
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(newMsg.PlainNestedField.PlainField).To(Equal(fromPrefix + toPrefix + startMsg.PlainNestedField.PlainField))
 }
 
 func TestMapNestedMsg(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tppff := &testProtoPlainFieldFactory{
@@ -76,20 +85,26 @@ func TestMapNestedMsg(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 	newMsg := &testprotos.NestedMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.NotEqual(t, fromPrefix+toPrefix+startMsg.MapNestedField[mapKey].PlainField, newMsg.MapNestedField[mapKey].PlainField)
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(newMsg.MapNestedField[mapKey].PlainField).NotTo(Equal(fromPrefix + toPrefix + startMsg.MapNestedField[mapKey].PlainField))
 
 	fieldFactories = []protoFieldFactory{tppff, nestedMapFieldFactory{}}
 
 	buffer.Reset()
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.Equal(t, fromPrefix+toPrefix+startMsg.MapNestedField[mapKey].PlainField, newMsg.MapNestedField[mapKey].PlainField)
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(newMsg.MapNestedField[mapKey].PlainField).To(Equal(fromPrefix + toPrefix + startMsg.MapNestedField[mapKey].PlainField))
 }
 
 func TestSliceNestedMsg(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tppff := &testProtoPlainFieldFactory{
@@ -109,15 +124,19 @@ func TestSliceNestedMsg(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 	newMsg := &testprotos.NestedMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.NotEqual(t, fromPrefix+toPrefix+startMsg.SliceNestedField[0].PlainField, newMsg.SliceNestedField[0].PlainField)
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(newMsg.SliceNestedField[0].PlainField).NotTo(Equal(fromPrefix + toPrefix + startMsg.SliceNestedField[0].PlainField))
 
 	fieldFactories = []protoFieldFactory{tppff, nestedSliceFieldFactory{}}
 
 	buffer.Reset()
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.Equal(t, fromPrefix+toPrefix+startMsg.SliceNestedField[0].PlainField, newMsg.SliceNestedField[0].PlainField)
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(newMsg.SliceNestedField[0].PlainField).To(Equal(fromPrefix + toPrefix + startMsg.SliceNestedField[0].PlainField))
 }

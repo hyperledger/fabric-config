@@ -26,7 +26,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator/testprotos"
-	"github.com/stretchr/testify/assert"
+
+	. "github.com/onsi/gomega"
 )
 
 type testProtoPlainFieldFactory struct {
@@ -60,6 +61,8 @@ func (tpff *testProtoPlainFieldFactory) NewProtoField(msg proto.Message, fieldNa
 }
 
 func TestSimpleMsgPlainField(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tppff := &testProtoPlainFieldFactory{
@@ -77,20 +80,24 @@ func TestSimpleMsgPlainField(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	newMsg := &testprotos.SimpleMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 
-	assert.Equal(t, startMsg.MapField, newMsg.MapField)
-	assert.Equal(t, startMsg.SliceField, newMsg.SliceField)
-	assert.Equal(t, fromPrefix+toPrefix+startMsg.PlainField, newMsg.PlainField)
+	gt.Expect(newMsg.MapField).To(Equal(startMsg.MapField))
+	gt.Expect(newMsg.SliceField).To(Equal(startMsg.SliceField))
+	gt.Expect(newMsg.PlainField).To(Equal(fromPrefix + toPrefix + startMsg.PlainField))
 
 	tppff.fromError = fmt.Errorf("Failing from intentionally")
-	assert.Error(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).To(MatchError("*testprotos.SimpleMsg: error in PopulateFrom for field plain_field for message *testprotos.SimpleMsg: Failing from intentionally"))
 
 	tppff.toError = fmt.Errorf("Failing to intentionally")
-	assert.Error(t, DeepMarshalJSON(&buffer, startMsg))
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).To(MatchError("*testprotos.SimpleMsg: error in PopulateTo for field plain_field for message *testprotos.SimpleMsg: Failing to intentionally"))
 }
 
 type testProtoMapFieldFactory struct {
@@ -124,6 +131,8 @@ func (tpff *testProtoMapFieldFactory) NewProtoField(msg proto.Message, fieldName
 }
 
 func TestSimpleMsgMapField(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tpmff := &testProtoMapFieldFactory{
@@ -141,20 +150,24 @@ func TestSimpleMsgMapField(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	newMsg := &testprotos.SimpleMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 
-	assert.Equal(t, startMsg.PlainField, newMsg.PlainField)
-	assert.Equal(t, startMsg.SliceField, newMsg.SliceField)
-	assert.Equal(t, fromPrefix+key+toPrefix+key+startMsg.MapField[key], newMsg.MapField[key])
+	gt.Expect(newMsg.PlainField).To(Equal(startMsg.PlainField))
+	gt.Expect(newMsg.SliceField).To(Equal(startMsg.SliceField))
+	gt.Expect(newMsg.MapField[key]).To(Equal(fromPrefix + key + toPrefix + key + startMsg.MapField[key]))
 
 	tpmff.fromError = fmt.Errorf("Failing from intentionally")
-	assert.Error(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).To(MatchError("*testprotos.SimpleMsg: error in PopulateFrom for map field map_field with key foo for message *testprotos.SimpleMsg: Failing from intentionally"))
 
 	tpmff.toError = fmt.Errorf("Failing to intentionally")
-	assert.Error(t, DeepMarshalJSON(&buffer, startMsg))
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).To(MatchError("*testprotos.SimpleMsg: error in PopulateTo for map field map_field and key foo for message *testprotos.SimpleMsg: Failing to intentionally"))
 }
 
 type testProtoSliceFieldFactory struct {
@@ -188,6 +201,8 @@ func (tpff *testProtoSliceFieldFactory) NewProtoField(msg proto.Message, fieldNa
 }
 
 func TestSimpleMsgSliceField(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tpsff := &testProtoSliceFieldFactory{
@@ -204,20 +219,24 @@ func TestSimpleMsgSliceField(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	newMsg := &testprotos.SimpleMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 
-	assert.Equal(t, startMsg.PlainField, newMsg.PlainField)
-	assert.Equal(t, startMsg.MapField, newMsg.MapField)
-	assert.Equal(t, fromPrefix+"0"+toPrefix+"0"+startMsg.SliceField[0], newMsg.SliceField[0])
+	gt.Expect(newMsg.PlainField).To(Equal(startMsg.PlainField))
+	gt.Expect(newMsg.MapField).To(Equal(startMsg.MapField))
+	gt.Expect(newMsg.SliceField[0]).To(Equal(fromPrefix + "0" + toPrefix + "0" + startMsg.SliceField[0]))
 
 	tpsff.fromError = fmt.Errorf("Failing from intentionally")
-	assert.Error(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).To(MatchError("*testprotos.SimpleMsg: error in PopulateFrom for slice field slice_field at index 0 for message *testprotos.SimpleMsg: Failing from intentionally"))
 
 	tpsff.toError = fmt.Errorf("Failing to intentionally")
-	assert.Error(t, DeepMarshalJSON(&buffer, startMsg))
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).To(MatchError("*testprotos.SimpleMsg: error in PopulateTo for slice field slice_field at index 0 for message *testprotos.SimpleMsg: Failing to intentionally"))
 }
 
 type testProtoFailFactory struct{}
@@ -231,21 +250,28 @@ func (tpff testProtoFailFactory) NewProtoField(msg proto.Message, fieldName stri
 }
 
 func TestFailFactory(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fieldFactories = []protoFieldFactory{&testProtoFailFactory{}}
 
 	var buffer bytes.Buffer
-	assert.Error(t, DeepMarshalJSON(&buffer, &testprotos.SimpleMsg{}))
+	err := DeepMarshalJSON(&buffer, &testprotos.SimpleMsg{})
+	gt.Expect(err).To(MatchError("*testprotos.SimpleMsg: Intentionally failing"))
 }
 
 func TestJSONUnmarshalMaxUint32(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fieldName := "numField"
 	jsonString := fmt.Sprintf("{\"%s\":%d}", fieldName, math.MaxUint32)
 	m, err := jsonToMap([]byte(jsonString))
-	assert.NoError(t, err)
-	assert.IsType(t, json.Number(""), m[fieldName])
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(m[fieldName]).To(BeAssignableToTypeOf(json.Number("")))
 }
 
 func TestMostlyDeterministicMarshal(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	multiKeyMap := &testprotos.SimpleMsg{
 		MapField: map[string]string{
 			"a": "b",
@@ -265,8 +291,8 @@ func TestMostlyDeterministicMarshal(t *testing.T) {
 	}
 
 	result, err := MostlyDeterministicMarshal(multiKeyMap)
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(result).NotTo(BeNil())
 
 	// Golang map marshaling is non-deterministic by default, by marshaling
 	// the same message with an embedded map multiple times, we should
@@ -275,12 +301,12 @@ func TestMostlyDeterministicMarshal(t *testing.T) {
 	// entries and 10 iterations seems like a reasonable check.
 	for i := 0; i < 10; i++ {
 		newResult, err := MostlyDeterministicMarshal(multiKeyMap)
-		assert.NoError(t, err)
-		assert.Equal(t, result, newResult)
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(newResult).To(Equal(result))
 	}
 
 	unmarshaled := &testprotos.SimpleMsg{}
 	err = proto.Unmarshal(result, unmarshaled)
-	assert.NoError(t, err)
-	assert.True(t, proto.Equal(unmarshaled, multiKeyMap))
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(proto.Equal(unmarshaled, multiKeyMap)).To(BeTrue())
 }
