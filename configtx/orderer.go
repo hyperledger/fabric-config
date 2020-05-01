@@ -503,11 +503,17 @@ func unmarshalEtcdRaftMetadata(mdBytes []byte) (orderer.EtcdRaft, error) {
 
 	for _, c := range etcdRaftMetadata.Consenters {
 		clientTLSCertBlock, _ := pem.Decode(c.ClientTlsCert)
+		if clientTLSCertBlock == nil {
+			return orderer.EtcdRaft{}, fmt.Errorf("no PEM data found in client TLS cert[% x]", c.ClientTlsCert)
+		}
 		clientTLSCert, err := x509.ParseCertificate(clientTLSCertBlock.Bytes)
 		if err != nil {
 			return orderer.EtcdRaft{}, fmt.Errorf("unable to parse client tls cert: %v", err)
 		}
 		serverTLSCertBlock, _ := pem.Decode(c.ServerTlsCert)
+		if serverTLSCertBlock == nil {
+			return orderer.EtcdRaft{}, fmt.Errorf("no PEM data found in server TLS cert[% x]", c.ServerTlsCert)
+		}
 		serverTLSCert, err := x509.ParseCertificate(serverTLSCertBlock.Bytes)
 		if err != nil {
 			return orderer.EtcdRaft{}, fmt.Errorf("unable to parse server tls cert: %v", err)

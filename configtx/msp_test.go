@@ -1874,6 +1874,51 @@ func TestCreateApplicationMSPCRLFailure(t *testing.T) {
 	}
 }
 
+func TestParseCertificateFromBytesFailure(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	errCert := `
+-----END CERTIFICATE-----
+`
+
+	_, err := parseCertificateFromBytes([]byte(errCert))
+	gt.Expect(err).NotTo(BeNil())
+	gt.Expect(err.Error()).To(ContainSubstring("no PEM data found in cert["))
+
+	_, err = parseCertificateFromBytes(nil)
+	gt.Expect(err).To(MatchError("no PEM data found in cert[]"))
+}
+
+func TestParseCRLFailure(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	errCRL := `
+-----END X509 CRL-----
+`
+
+	_, err := parseCRL([][]byte{[]byte(errCRL)})
+	gt.Expect(err).NotTo(BeNil())
+	gt.Expect(err.Error()).To(ContainSubstring("no PEM data found in CRL["))
+
+	_, err = parseCRL([][]byte{nil, []byte(errCRL)})
+	gt.Expect(err).To(MatchError("no PEM data found in CRL[]"))
+}
+
+func TestParsePrivateKeyFromBytesFailure(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	errPrivateKey := `
+-----END EC PRIVATE KEY-----
+`
+
+	_, err := parsePrivateKeyFromBytes([]byte(errPrivateKey))
+	gt.Expect(err).NotTo(BeNil())
+	gt.Expect(err.Error()).To(ContainSubstring("no PEM data found in private key["))
+}
+
 func baseMSP(t *testing.T) MSP {
 	gt := NewGomegaWithT(t)
 
