@@ -12,7 +12,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator/testprotos"
-	"github.com/stretchr/testify/assert"
+
+	. "github.com/onsi/gomega"
 )
 
 func extractNestedMsgPlainField(source []byte) string {
@@ -25,6 +26,8 @@ func extractNestedMsgPlainField(source []byte) string {
 }
 
 func TestPlainVariablyOpaqueMsg(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tppff := &testProtoPlainFieldFactory{
@@ -45,20 +48,26 @@ func TestPlainVariablyOpaqueMsg(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 	newMsg := &testprotos.VariablyOpaqueMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.NotEqual(t, fromPrefix+toPrefix+extractNestedMsgPlainField(startMsg.PlainOpaqueField), extractNestedMsgPlainField(newMsg.PlainOpaqueField))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(extractNestedMsgPlainField(newMsg.PlainOpaqueField)).NotTo(Equal(fromPrefix + toPrefix + extractNestedMsgPlainField(startMsg.PlainOpaqueField)))
 
 	fieldFactories = []protoFieldFactory{tppff, nestedFieldFactory{}, variablyOpaqueFieldFactory{}}
 
 	buffer.Reset()
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.Equal(t, fromPrefix+toPrefix+extractNestedMsgPlainField(startMsg.PlainOpaqueField), extractNestedMsgPlainField(newMsg.PlainOpaqueField))
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(extractNestedMsgPlainField(newMsg.PlainOpaqueField)).To(Equal(fromPrefix + toPrefix + extractNestedMsgPlainField(startMsg.PlainOpaqueField)))
 }
 
 func TestMapVariablyOpaqueMsg(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tppff := &testProtoPlainFieldFactory{
@@ -82,20 +91,26 @@ func TestMapVariablyOpaqueMsg(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 	newMsg := &testprotos.VariablyOpaqueMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.NotEqual(t, fromPrefix+toPrefix+extractNestedMsgPlainField(startMsg.MapOpaqueField[mapKey]), extractNestedMsgPlainField(newMsg.MapOpaqueField[mapKey]))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(extractNestedMsgPlainField(newMsg.MapOpaqueField[mapKey])).NotTo(Equal(fromPrefix + toPrefix + extractNestedMsgPlainField(startMsg.MapOpaqueField[mapKey])))
 
 	fieldFactories = []protoFieldFactory{tppff, nestedFieldFactory{}, variablyOpaqueMapFieldFactory{}}
 
 	buffer.Reset()
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.Equal(t, fromPrefix+toPrefix+extractNestedMsgPlainField(startMsg.MapOpaqueField[mapKey]), extractNestedMsgPlainField(newMsg.MapOpaqueField[mapKey]))
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(extractNestedMsgPlainField(newMsg.MapOpaqueField[mapKey])).To(Equal(fromPrefix + toPrefix + extractNestedMsgPlainField(startMsg.MapOpaqueField[mapKey])))
 }
 
 func TestSliceVariablyOpaqueMsg(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	fromPrefix := "from"
 	toPrefix := "to"
 	tppff := &testProtoPlainFieldFactory{
@@ -118,15 +133,19 @@ func TestSliceVariablyOpaqueMsg(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
+	err := DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
 	newMsg := &testprotos.VariablyOpaqueMsg{}
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.NotEqual(t, fromPrefix+toPrefix+extractNestedMsgPlainField(startMsg.SliceOpaqueField[0]), extractNestedMsgPlainField(newMsg.SliceOpaqueField[0]))
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(extractNestedMsgPlainField(newMsg.SliceOpaqueField[0])).NotTo(Equal(fromPrefix + toPrefix + extractNestedMsgPlainField(startMsg.SliceOpaqueField[0])))
 
 	fieldFactories = []protoFieldFactory{tppff, nestedFieldFactory{}, variablyOpaqueSliceFieldFactory{}}
 
 	buffer.Reset()
-	assert.NoError(t, DeepMarshalJSON(&buffer, startMsg))
-	assert.NoError(t, DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg))
-	assert.Equal(t, fromPrefix+toPrefix+extractNestedMsgPlainField(startMsg.SliceOpaqueField[0]), extractNestedMsgPlainField(newMsg.SliceOpaqueField[0]))
+	err = DeepMarshalJSON(&buffer, startMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newMsg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(extractNestedMsgPlainField(newMsg.SliceOpaqueField[0])).To(Equal(fromPrefix + toPrefix + extractNestedMsgPlainField(startMsg.SliceOpaqueField[0])))
 }

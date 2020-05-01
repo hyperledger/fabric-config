@@ -11,29 +11,32 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/stretchr/testify/assert"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestCommonProtolator(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
 	// Envelope
 	env := &Envelope{Envelope: &common.Envelope{}}
-	assert.Equal(t, []string{"payload"}, env.StaticallyOpaqueFields())
+	gt.Expect(env.StaticallyOpaqueFields()).To(Equal([]string{"payload"}))
 	msg, err := env.StaticallyOpaqueFieldProto("badproto")
-	assert.Nil(t, msg)
-	assert.Error(t, err)
+	gt.Expect(msg).To(BeNil())
+	gt.Expect(err).To(MatchError("not a marshaled field: badproto"))
 	msg, err = env.StaticallyOpaqueFieldProto("payload")
-	assert.NoError(t, err)
-	assert.Equal(t, &common.Payload{}, msg)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(msg).To(Equal(&common.Payload{}))
 
 	// Payload
 	payload := &Payload{Payload: &common.Payload{}}
-	assert.Equal(t, []string{"data"}, payload.VariablyOpaqueFields())
+	gt.Expect(payload.VariablyOpaqueFields()).To(Equal([]string{"data"}))
 	msg, err = payload.VariablyOpaqueFieldProto("badproto")
-	assert.Nil(t, msg)
-	assert.Error(t, err)
+	gt.Expect(msg).To(BeNil())
+	gt.Expect(err).To(MatchError("not a marshaled field: badproto"))
 	msg, err = payload.VariablyOpaqueFieldProto("data")
-	assert.Nil(t, msg)
-	assert.Error(t, err)
+	gt.Expect(msg).To(BeNil())
+	gt.Expect(err).To(MatchError("cannot determine payload type when header is missing"))
 
 	payload = &Payload{
 		Payload: &common.Payload{
@@ -43,8 +46,8 @@ func TestCommonProtolator(t *testing.T) {
 		},
 	}
 	msg, err = payload.VariablyOpaqueFieldProto("data")
-	assert.Nil(t, msg)
-	assert.Error(t, err)
+	gt.Expect(msg).To(BeNil())
+	gt.Expect(err).To(MatchError("corrupt channel header: unexpected EOF"))
 
 	ch := &common.ChannelHeader{
 		Type: int32(common.HeaderType_CONFIG),
@@ -58,8 +61,8 @@ func TestCommonProtolator(t *testing.T) {
 		},
 	}
 	msg, err = payload.VariablyOpaqueFieldProto("data")
-	assert.Equal(t, &common.ConfigEnvelope{}, msg)
-	assert.NoError(t, err)
+	gt.Expect(msg).To(Equal(&common.ConfigEnvelope{}))
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	ch = &common.ChannelHeader{
 		Type: int32(common.HeaderType_CONFIG_UPDATE),
@@ -73,8 +76,8 @@ func TestCommonProtolator(t *testing.T) {
 		},
 	}
 	msg, err = payload.VariablyOpaqueFieldProto("data")
-	assert.Equal(t, &common.ConfigUpdateEnvelope{}, msg)
-	assert.NoError(t, err)
+	gt.Expect(msg).To(Equal(&common.ConfigUpdateEnvelope{}))
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	ch = &common.ChannelHeader{
 		Type: int32(common.HeaderType_CHAINCODE_PACKAGE),
@@ -88,34 +91,34 @@ func TestCommonProtolator(t *testing.T) {
 		},
 	}
 	msg, err = payload.VariablyOpaqueFieldProto("data")
-	assert.Nil(t, msg)
-	assert.Error(t, err)
+	gt.Expect(msg).To(BeNil())
+	gt.Expect(err).To(MatchError("decoding type 6 is unimplemented"))
 
 	// Header
 	var header *Header
-	assert.Equal(t, []string{"channel_header", "signature_header"},
-		header.StaticallyOpaqueFields())
+	gt.Expect(header.StaticallyOpaqueFields()).To(Equal(
+		[]string{"channel_header", "signature_header"}))
 
 	msg, err = header.StaticallyOpaqueFieldProto("badproto")
-	assert.Nil(t, msg)
-	assert.Error(t, err)
+	gt.Expect(msg).To(BeNil())
+	gt.Expect(err).To(MatchError("unknown header field: badproto"))
 
 	msg, err = header.StaticallyOpaqueFieldProto("channel_header")
-	assert.Equal(t, &common.ChannelHeader{}, msg)
-	assert.NoError(t, err)
+	gt.Expect(msg).To(Equal(&common.ChannelHeader{}))
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	msg, err = header.StaticallyOpaqueFieldProto("signature_header")
-	assert.Equal(t, &common.SignatureHeader{}, msg)
-	assert.NoError(t, err)
+	gt.Expect(msg).To(Equal(&common.SignatureHeader{}))
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	// BlockData
 	var bd *BlockData
-	assert.Equal(t, []string{"data"}, bd.StaticallyOpaqueSliceFields())
+	gt.Expect(bd.StaticallyOpaqueSliceFields()).To(Equal([]string{"data"}))
 
 	msg, err = bd.StaticallyOpaqueSliceFieldProto("badslice", 0)
-	assert.Nil(t, msg)
-	assert.Error(t, err)
+	gt.Expect(msg).To(BeNil())
+	gt.Expect(err).To(MatchError("not an opaque slice field: badslice"))
 	msg, err = bd.StaticallyOpaqueSliceFieldProto("data", 0)
-	assert.Equal(t, &common.Envelope{}, msg)
-	assert.NoError(t, err)
+	gt.Expect(msg).To(Equal(&common.Envelope{}))
+	gt.Expect(err).NotTo(HaveOccurred())
 }
