@@ -27,16 +27,9 @@ type Application struct {
 }
 
 // ApplicationGroup encapsulates the part of the config that controls
-// application channels. This type implements retrieval of the various
-// application config values.
+// application channels.
 type ApplicationGroup struct {
 	applicationGroup *cb.ConfigGroup
-}
-
-// UpdatedApplicationGroup is an ApplicationGroup that can be modified in
-// order to generate a config update.
-type UpdatedApplicationGroup struct {
-	*ApplicationGroup
 }
 
 // ApplicationOrg encapsulates the parts of the config that control
@@ -46,26 +39,13 @@ type ApplicationOrg struct {
 	name     string
 }
 
-// UpdatedApplicationOrg is an ApplicationOrg that can be modified in order
-// to generate a config update.
-type UpdatedApplicationOrg struct {
-	*ApplicationOrg
-	name string
-}
-
-// Application returns the application group the original config.
-func (o *OriginalConfig) Application() *ApplicationGroup {
-	applicationGroup := o.ChannelGroup.Groups[ApplicationGroupKey]
+// Application returns the application group the updated config.
+func (c *ConfigTx) Application() *ApplicationGroup {
+	applicationGroup := c.updated.ChannelGroup.Groups[ApplicationGroupKey]
 	return &ApplicationGroup{applicationGroup: applicationGroup}
 }
 
-// Application returns the application group the updated config.
-func (u *UpdatedConfig) Application() *UpdatedApplicationGroup {
-	applicationGroup := u.ChannelGroup.Groups[ApplicationGroupKey]
-	return &UpdatedApplicationGroup{ApplicationGroup: &ApplicationGroup{applicationGroup: applicationGroup}}
-}
-
-// Organization returns the application org from the original config.
+// Organization returns the application org from the updated config.
 func (a *ApplicationGroup) Organization(name string) *ApplicationOrg {
 	organizationGroup, ok := a.applicationGroup.Groups[name]
 	if !ok {
@@ -74,29 +54,24 @@ func (a *ApplicationGroup) Organization(name string) *ApplicationOrg {
 	return &ApplicationOrg{name: name, orgGroup: organizationGroup}
 }
 
-// Organization returns the application org from the updated config.
-func (u *UpdatedApplicationGroup) Organization(name string) *UpdatedApplicationOrg {
-	return &UpdatedApplicationOrg{ApplicationOrg: u.ApplicationGroup.Organization(name)}
-}
-
 // SetOrganization sets the organization config group for the given application
 // org key in an existing Application configuration's Groups map.
 // If the application org already exists in the current configuration, its value will be overwritten.
-func (u *UpdatedApplicationGroup) SetOrganization(org Organization) error {
+func (a *ApplicationGroup) SetOrganization(org Organization) error {
 	orgGroup, err := newApplicationOrgConfigGroup(org)
 	if err != nil {
 		return fmt.Errorf("failed to create application org %s: %v", org.Name, err)
 	}
 
-	u.applicationGroup.Groups[org.Name] = orgGroup
+	a.applicationGroup.Groups[org.Name] = orgGroup
 
 	return nil
 }
 
 // RemoveOrganization removes an org from the Application group.
 // Removal will panic if the application group does not exist.
-func (u *UpdatedApplicationGroup) RemoveOrganization(orgName string) {
-	delete(u.applicationGroup.Groups, orgName)
+func (a *ApplicationGroup) RemoveOrganization(orgName string) {
+	delete(a.applicationGroup.Groups, orgName)
 }
 
 // Configuration returns the existing application configuration values from a config
@@ -138,7 +113,7 @@ func (a *ApplicationGroup) Configuration() (Application, error) {
 }
 
 // Configuration returns the existing application org configuration values
-// from the original config.
+// from the updated config.
 func (a *ApplicationOrg) Configuration() (Organization, error) {
 	org, err := getOrganization(a.orgGroup, a.name)
 	if err != nil {
@@ -147,14 +122,8 @@ func (a *ApplicationOrg) Configuration() (Organization, error) {
 	return org, nil
 }
 
-// Configuration returns the existing application org configuration values
-// from the updated config.
-func (u *UpdatedApplicationOrg) Configuration() (Organization, error) {
-	return u.ApplicationOrg.Configuration()
-}
-
 // Capabilities returns a map of enabled application capabilities
-// from the original config.
+// from the updated config.
 func (a *ApplicationGroup) Capabilities() ([]string, error) {
 	capabilities, err := getCapabilities(a.applicationGroup)
 	if err != nil {
@@ -164,22 +133,16 @@ func (a *ApplicationGroup) Capabilities() ([]string, error) {
 	return capabilities, nil
 }
 
-// Capabilities returns a map of enabled application capabilities
-// from the updated config.
-func (u *UpdatedApplicationGroup) Capabilities() ([]string, error) {
-	return u.ApplicationGroup.Capabilities()
-}
-
 // AddCapability sets capability to the provided channel config.
 // If the provided capability already exist in current configuration, this action
 // will be a no-op.
-func (u *UpdatedApplicationGroup) AddCapability(capability string) error {
-	capabilities, err := u.Capabilities()
+func (a *ApplicationGroup) AddCapability(capability string) error {
+	capabilities, err := a.Capabilities()
 	if err != nil {
 		return err
 	}
 
-	err = addCapability(u.applicationGroup, capabilities, AdminsPolicyKey, capability)
+	err = addCapability(a.applicationGroup, capabilities, AdminsPolicyKey, capability)
 	if err != nil {
 		return err
 	}
@@ -188,13 +151,13 @@ func (u *UpdatedApplicationGroup) AddCapability(capability string) error {
 }
 
 // RemoveCapability removes capability to the provided channel config.
-func (u *UpdatedApplicationGroup) RemoveCapability(capability string) error {
-	capabilities, err := u.Capabilities()
+func (a *ApplicationGroup) RemoveCapability(capability string) error {
+	capabilities, err := a.Capabilities()
 	if err != nil {
 		return err
 	}
 
-	err = removeCapability(u.applicationGroup, capabilities, AdminsPolicyKey, capability)
+	err = removeCapability(a.applicationGroup, capabilities, AdminsPolicyKey, capability)
 	if err != nil {
 		return err
 	}
@@ -203,21 +166,15 @@ func (u *UpdatedApplicationGroup) RemoveCapability(capability string) error {
 }
 
 // Policies returns a map of policies for the application config group in
-// the original config.
+// the updatedconfig.
 func (a *ApplicationGroup) Policies() (map[string]Policy, error) {
 	return getPolicies(a.applicationGroup.Policies)
 }
 
-// Policies returns a map of policies for the application config group in
-// the updated config.
-func (u *UpdatedApplicationGroup) Policies() (map[string]Policy, error) {
-	return u.ApplicationGroup.Policies()
-}
-
 // SetPolicy sets the specified policy in the application group's config policy map.
 // If the policy already exist in current configuration, its value will be overwritten.
-func (u *UpdatedApplicationGroup) SetPolicy(modPolicy, policyName string, policy Policy) error {
-	err := setPolicy(u.applicationGroup, modPolicy, policyName, policy)
+func (a *ApplicationGroup) SetPolicy(modPolicy, policyName string, policy Policy) error {
+	err := setPolicy(a.applicationGroup, modPolicy, policyName, policy)
 	if err != nil {
 		return fmt.Errorf("failed to set policy '%s': %v", policyName, err)
 	}
@@ -227,32 +184,26 @@ func (u *UpdatedApplicationGroup) SetPolicy(modPolicy, policyName string, policy
 
 // RemovePolicy removes an existing policy from an application's configuration.
 // Removal will panic if the application group does not exist.
-func (u *UpdatedApplicationGroup) RemovePolicy(policyName string) error {
-	policies, err := u.Policies()
+func (a *ApplicationGroup) RemovePolicy(policyName string) error {
+	policies, err := a.Policies()
 	if err != nil {
 		return err
 	}
 
-	removePolicy(u.applicationGroup, policyName, policies)
+	removePolicy(a.applicationGroup, policyName, policies)
 	return nil
 }
 
 // Policies returns the map of policies for a specific application org in
-// the original config..
+// the updated config..
 func (a *ApplicationOrg) Policies() (map[string]Policy, error) {
 	return getPolicies(a.orgGroup.Policies)
 }
 
-// Policies returns the map of policies for a specific application org in
-// the updated config..
-func (u *UpdatedApplicationOrg) Policies() (map[string]Policy, error) {
-	return u.ApplicationOrg.Policies()
-}
-
 // SetPolicy sets the specified policy in the application org group's config policy map.
 // If an Organization policy already exist in current configuration, its value will be overwritten.
-func (u *UpdatedApplicationOrg) SetPolicy(modPolicy, policyName string, policy Policy) error {
-	err := setPolicy(u.orgGroup, modPolicy, policyName, policy)
+func (a *ApplicationOrg) SetPolicy(modPolicy, policyName string, policy Policy) error {
+	err := setPolicy(a.orgGroup, modPolicy, policyName, policy)
 	if err != nil {
 		return fmt.Errorf("failed to set policy '%s': %v", policyName, err)
 	}
@@ -261,18 +212,18 @@ func (u *UpdatedApplicationOrg) SetPolicy(modPolicy, policyName string, policy P
 }
 
 // RemovePolicy removes an existing policy from an application organization.
-func (u *UpdatedApplicationOrg) RemovePolicy(policyName string) error {
-	policies, err := u.Policies()
+func (a *ApplicationOrg) RemovePolicy(policyName string) error {
+	policies, err := a.Policies()
 	if err != nil {
 		return err
 	}
 
-	removePolicy(u.orgGroup, policyName, policies)
+	removePolicy(a.orgGroup, policyName, policies)
 	return nil
 }
 
 // AnchorPeers returns the list of anchor peers for an application org
-// in the original config.
+// in the updated config.
 func (a *ApplicationOrg) AnchorPeers() ([]Address, error) {
 	anchorPeerConfigValue, ok := a.orgGroup.Values[AnchorPeersKey]
 	if !ok {
@@ -301,18 +252,12 @@ func (a *ApplicationOrg) AnchorPeers() ([]Address, error) {
 	return anchorPeers, nil
 }
 
-// AnchorPeers returns the list of anchor peers for an application org
-// in the updatd config.
-func (u *UpdatedApplicationOrg) AnchorPeers() ([]Address, error) {
-	return u.ApplicationOrg.AnchorPeers()
-}
-
 // AddAnchorPeer adds an anchor peer to an application org's configuration
 // in the updated config.
-func (u *UpdatedApplicationOrg) AddAnchorPeer(newAnchorPeer Address) error {
+func (a *ApplicationOrg) AddAnchorPeer(newAnchorPeer Address) error {
 	anchorPeersProto := &pb.AnchorPeers{}
 
-	if anchorPeerConfigValue, ok := u.ApplicationOrg.orgGroup.Values[AnchorPeersKey]; ok {
+	if anchorPeerConfigValue, ok := a.orgGroup.Values[AnchorPeersKey]; ok {
 		// Unmarshal existing anchor peers if the config value exists
 		err := proto.Unmarshal(anchorPeerConfigValue.Value, anchorPeersProto)
 		if err != nil {
@@ -336,7 +281,7 @@ func (u *UpdatedApplicationOrg) AddAnchorPeer(newAnchorPeer Address) error {
 	})
 
 	// Add anchor peers config value back to application org
-	err := setValue(u.orgGroup, anchorPeersValue(anchorProtos), AdminsPolicyKey)
+	err := setValue(a.orgGroup, anchorPeersValue(anchorProtos), AdminsPolicyKey)
 	if err != nil {
 		return err
 	}
@@ -345,14 +290,14 @@ func (u *UpdatedApplicationOrg) AddAnchorPeer(newAnchorPeer Address) error {
 
 // RemoveAnchorPeer removes an anchor peer from an application org's configuration
 // in the updated config.
-func (u *UpdatedApplicationOrg) RemoveAnchorPeer(anchorPeerToRemove Address) error {
+func (a *ApplicationOrg) RemoveAnchorPeer(anchorPeerToRemove Address) error {
 	anchorPeersProto := &pb.AnchorPeers{}
 
-	if anchorPeerConfigValue, ok := u.ApplicationOrg.orgGroup.Values[AnchorPeersKey]; ok {
+	if anchorPeerConfigValue, ok := a.orgGroup.Values[AnchorPeersKey]; ok {
 		// Unmarshal existing anchor peers if the config value exists
 		err := proto.Unmarshal(anchorPeerConfigValue.Value, anchorPeersProto)
 		if err != nil {
-			return fmt.Errorf("failed unmarshaling anchor peer endpoints for application org %s: %v", u.ApplicationOrg.name, err)
+			return fmt.Errorf("failed unmarshaling anchor peer endpoints for application org %s: %v", a.name, err)
 		}
 	}
 
@@ -362,9 +307,9 @@ func (u *UpdatedApplicationOrg) RemoveAnchorPeer(anchorPeerToRemove Address) err
 			existingAnchorPeers = append(existingAnchorPeers, anchorPeer)
 
 			// Add anchor peers config value back to application org
-			err := setValue(u.orgGroup, anchorPeersValue(existingAnchorPeers), AdminsPolicyKey)
+			err := setValue(a.orgGroup, anchorPeersValue(existingAnchorPeers), AdminsPolicyKey)
 			if err != nil {
-				return fmt.Errorf("failed to remove anchor peer %v from org %s: %v", anchorPeerToRemove, u.ApplicationOrg.name, err)
+				return fmt.Errorf("failed to remove anchor peer %v from org %s: %v", anchorPeerToRemove, a.name, err)
 			}
 
 			return nil
@@ -372,13 +317,13 @@ func (u *UpdatedApplicationOrg) RemoveAnchorPeer(anchorPeerToRemove Address) err
 	}
 
 	if len(existingAnchorPeers) == len(anchorPeersProto.AnchorPeers) {
-		return fmt.Errorf("could not find anchor peer %s:%d in application org %s", anchorPeerToRemove.Host, anchorPeerToRemove.Port, u.name)
+		return fmt.Errorf("could not find anchor peer %s:%d in application org %s", anchorPeerToRemove.Host, anchorPeerToRemove.Port, a.name)
 	}
 
 	// Add anchor peers config value back to application org
-	err := setValue(u.orgGroup, anchorPeersValue(existingAnchorPeers), AdminsPolicyKey)
+	err := setValue(a.orgGroup, anchorPeersValue(existingAnchorPeers), AdminsPolicyKey)
 	if err != nil {
-		return fmt.Errorf("failed to remove anchor peer %v from org %s: %v", anchorPeerToRemove, u.name, err)
+		return fmt.Errorf("failed to remove anchor peer %v from org %s: %v", anchorPeerToRemove, a.name, err)
 	}
 
 	return nil
@@ -401,15 +346,10 @@ func (a *ApplicationGroup) ACLs() (map[string]string, error) {
 	return retACLs, nil
 }
 
-// ACLs returns a map of ACLS for given config application.
-func (u *UpdatedApplicationGroup) ACLs() (map[string]string, error) {
-	return u.ApplicationGroup.ACLs()
-}
-
 // SetACLs sets ACLS to an existing channel config application.
 // If an ACL already exist in current configuration, it will be replaced with new ACL.
-func (u *UpdatedApplicationGroup) SetACLs(acls map[string]string) error {
-	err := setValue(u.applicationGroup, aclValues(acls), AdminsPolicyKey)
+func (a *ApplicationGroup) SetACLs(acls map[string]string) error {
+	err := setValue(a.applicationGroup, aclValues(acls), AdminsPolicyKey)
 	if err != nil {
 		return err
 	}
@@ -420,8 +360,8 @@ func (u *UpdatedApplicationGroup) SetACLs(acls map[string]string) error {
 // RemoveACLs a list of ACLs from given channel config application.
 // Specifying acls that do not exist in the application ConfigGroup of the channel config will not return a error.
 // Removal will panic if application group does not exist.
-func (u *UpdatedApplicationGroup) RemoveACLs(acls []string) error {
-	configACLs, err := u.ACLs()
+func (a *ApplicationGroup) RemoveACLs(acls []string) error {
+	configACLs, err := a.ACLs()
 	if err != nil {
 		return err
 	}
@@ -430,7 +370,7 @@ func (u *UpdatedApplicationGroup) RemoveACLs(acls []string) error {
 		delete(configACLs, acl)
 	}
 
-	err = setValue(u.applicationGroup, aclValues(configACLs), AdminsPolicyKey)
+	err = setValue(a.applicationGroup, aclValues(configACLs), AdminsPolicyKey)
 	if err != nil {
 		return err
 	}
@@ -439,21 +379,15 @@ func (u *UpdatedApplicationGroup) RemoveACLs(acls []string) error {
 }
 
 // MSP returns the MSP configuration for an existing application
-// org in the original config of a config transaction.
+// org in the updated config of a config transaction.
 func (a *ApplicationOrg) MSP() (MSP, error) {
 	return getMSPConfig(a.orgGroup)
 }
 
-// MSP returns the MSP configuration for an existing application
-// org in the updated config of a config transaction.
-func (u *UpdatedApplicationOrg) MSP() (MSP, error) {
-	return getMSPConfig(u.orgGroup)
-}
-
 // SetMSP updates the MSP config for the specified application
 // org group.
-func (u *UpdatedApplicationOrg) SetMSP(updatedMSP MSP) error {
-	currentMSP, err := u.MSP()
+func (a *ApplicationOrg) SetMSP(updatedMSP MSP) error {
+	currentMSP, err := a.MSP()
 	if err != nil {
 		return fmt.Errorf("retrieving msp: %v", err)
 	}
@@ -467,7 +401,7 @@ func (u *UpdatedApplicationOrg) SetMSP(updatedMSP MSP) error {
 		return err
 	}
 
-	err = u.setMSPConfig(updatedMSP)
+	err = a.setMSPConfig(updatedMSP)
 	if err != nil {
 		return err
 	}
@@ -475,13 +409,13 @@ func (u *UpdatedApplicationOrg) SetMSP(updatedMSP MSP) error {
 	return nil
 }
 
-func (u *UpdatedApplicationOrg) setMSPConfig(updatedMSP MSP) error {
+func (a *ApplicationOrg) setMSPConfig(updatedMSP MSP) error {
 	mspConfig, err := newMSPConfig(updatedMSP)
 	if err != nil {
 		return fmt.Errorf("new msp config: %v", err)
 	}
 
-	err = setValue(u.ApplicationOrg.orgGroup, mspValue(mspConfig), AdminsPolicyKey)
+	err = setValue(a.orgGroup, mspValue(mspConfig), AdminsPolicyKey)
 	if err != nil {
 		return err
 	}
@@ -491,8 +425,8 @@ func (u *UpdatedApplicationOrg) setMSPConfig(updatedMSP MSP) error {
 
 // CreateMSPCRL creates a CRL that revokes the provided certificates
 // for the specified application org signed by the provided SigningIdentity.
-func (u *UpdatedApplicationOrg) CreateMSPCRL(signingIdentity *SigningIdentity, certs ...*x509.Certificate) (*pkix.CertificateList, error) {
-	msp, err := u.MSP()
+func (a *ApplicationOrg) CreateMSPCRL(signingIdentity *SigningIdentity, certs ...*x509.Certificate) (*pkix.CertificateList, error) {
+	msp, err := a.MSP()
 	if err != nil {
 		return nil, fmt.Errorf("retrieving application org msp: %s", err)
 	}

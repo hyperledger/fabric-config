@@ -750,10 +750,10 @@ func TestSetConsortiumOrg(t *testing.T) {
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedConfigJSON), expectedConfigProto)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	err = c.UpdatedConfig().Consortiums().Consortium("Consortium1").SetOrganization(orgToAdd)
+	err = c.Consortiums().Consortium("Consortium1").SetOrganization(orgToAdd)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(proto.Equal(c.UpdatedConfig().Config, expectedConfigProto)).To(BeTrue())
+	gt.Expect(proto.Equal(c.updated, expectedConfigProto)).To(BeTrue())
 }
 
 func TestSetConsortiumOrgFailures(t *testing.T) {
@@ -797,7 +797,7 @@ func TestSetConsortiumOrgFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.UpdatedConfig().Consortiums().Consortium(test.consortium).SetOrganization(test.org)
+			err = c.Consortiums().Consortium(test.consortium).SetOrganization(test.org)
 			gt.Expect(err).To(MatchError(test.expectedErr))
 		})
 	}
@@ -824,10 +824,10 @@ func TestRemoveConsortium(t *testing.T) {
 
 	c := New(config)
 
-	c.UpdatedConfig().Consortiums().RemoveConsortium("Consortium1")
+	c.Consortiums().RemoveConsortium("Consortium1")
 
-	updatedConsortiumsGroup := c.UpdatedConfig().Consortiums()
-	gt.Expect(updatedConsortiumsGroup.Consortium("Consortium1").ConsortiumGroup).To(BeNil())
+	updatedConsortiumsGroup := c.Consortiums()
+	gt.Expect(updatedConsortiumsGroup.Consortium("Consortium1")).To(BeNil())
 }
 
 func TestGetConsortiums(t *testing.T) {
@@ -851,7 +851,7 @@ func TestGetConsortiums(t *testing.T) {
 	config := &cb.Config{ChannelGroup: channelGroup}
 	c := New(config)
 
-	consortiums, err := c.OriginalConfig().Consortiums().Configuration()
+	consortiums, err := c.Consortiums().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(len(baseConsortiums)).To(Equal(len(consortiums)))
 }
@@ -893,7 +893,7 @@ func TestSetConsortium(t *testing.T) {
 	newConsortium := consortiums[0]
 	newConsortium.Name = "Consortium2"
 
-	err = c.UpdatedConfig().Consortiums().SetConsortium(newConsortium)
+	err = c.Consortiums().SetConsortium(newConsortium)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	org1CertBase64, org1CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[0].MSP)
@@ -1415,7 +1415,7 @@ func TestSetConsortium(t *testing.T) {
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedConfigJSON), expectedConfigProto)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(proto.Equal(c.UpdatedConfig().Config, expectedConfigProto)).To(BeTrue())
+	gt.Expect(proto.Equal(c.updated, expectedConfigProto)).To(BeTrue())
 }
 
 func baseConsortiums(t *testing.T) ([]Consortium, []*ecdsa.PrivateKey) {

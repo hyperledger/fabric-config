@@ -78,42 +78,19 @@ type standardConfigPolicy struct {
 // ConfigTx wraps a config transaction.
 type ConfigTx struct {
 	// original state of the config
-	original *OriginalConfig
+	original *cb.Config
 	// modified state of the config
-	updated *UpdatedConfig
+	updated *cb.Config
 }
 
 // New creates a new ConfigTx from a Config protobuf.
 // New will panic if given an empty config.
 func New(config *cb.Config) ConfigTx {
 	return ConfigTx{
-		original: &OriginalConfig{Config: config},
+		original: config,
 		// Clone the base config for processing updates
-		updated: &UpdatedConfig{Config: proto.Clone(config).(*cb.Config)},
+		updated: proto.Clone(config).(*cb.Config),
 	}
-}
-
-// OriginalConfig wraps the original state of the config
-// and implements functions for retrieving values on it.
-type OriginalConfig struct {
-	*cb.Config
-}
-
-// UpdatedConfig wraps the modified state of the config
-// and implements functions for retrieving and setting values
-// on it.
-type UpdatedConfig struct {
-	*cb.Config
-}
-
-// OriginalConfig returns the original state of the config.
-func (c *ConfigTx) OriginalConfig() *OriginalConfig {
-	return c.original
-}
-
-// UpdatedConfig returns the modified state of the config
-func (c *ConfigTx) UpdatedConfig() *UpdatedConfig {
-	return c.updated
 }
 
 // ComputeUpdate computes the ConfigUpdate from a base and modified config transaction.
@@ -122,7 +99,7 @@ func (c *ConfigTx) ComputeUpdate(channelID string) (*cb.ConfigUpdate, error) {
 		return nil, errors.New("channel ID is required")
 	}
 
-	updt, err := computeConfigUpdate(c.original.Config, c.updated.Config)
+	updt, err := computeConfigUpdate(c.original, c.updated)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute update: %v", err)
 	}
@@ -223,7 +200,7 @@ func newSystemChannelGroup(channelConfig Channel) (*cb.ConfigGroup, error) {
 
 	err = setPolicies(channelGroup, channelConfig.Policies, AdminsPolicyKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add system channel policies: %v", err)
+		return nil, fmt.Errorf("failed to set system channel policies: %v", err)
 	}
 
 	err = setValue(channelGroup, hashingAlgorithmValue(), AdminsPolicyKey)

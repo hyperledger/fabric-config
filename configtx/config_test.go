@@ -1159,8 +1159,8 @@ func TestComputeUpdate(t *testing.T) {
 	}
 
 	c := ConfigTx{
-		original: &OriginalConfig{Config: original},
-		updated:  &UpdatedConfig{Config: updated},
+		original: original,
+		updated:  updated,
 	}
 
 	channelID := "testChannel"
@@ -1195,8 +1195,8 @@ func TestComputeUpdateFailures(t *testing.T) {
 	updated := &cb.Config{}
 
 	c := ConfigTx{
-		original: &OriginalConfig{Config: original},
-		updated:  &UpdatedConfig{Config: updated},
+		original: original,
+		updated:  updated,
 	}
 
 	for _, test := range []struct {
@@ -1299,7 +1299,7 @@ func TestChannelConfiguration(t *testing.T) {
 			config := tt.configMod(gt)
 			c := New(config)
 
-			channel, err := c.OriginalConfig().Channel().Configuration()
+			channel, err := c.Channel().Configuration()
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(channel.Consortium).To(Equal(tt.expectedChannel.Consortium))
 			gt.Expect(channel.Application.Organizations).To(ContainElements(tt.expectedChannel.Application.Organizations))

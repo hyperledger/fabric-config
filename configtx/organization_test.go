@@ -72,7 +72,7 @@ func TestApplicationOrg(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			org, err := c.UpdatedConfig().Application().Organization(tc.orgName).Configuration()
+			org, err := c.Application().Organization(tc.orgName).Configuration()
 			gt.Expect(err).ToNot(HaveOccurred())
 			gt.Expect(expectedOrg).To(Equal(org))
 		})
@@ -102,7 +102,7 @@ func TestRemoveApplicationOrg(t *testing.T) {
 
 	c := New(config)
 
-	c.UpdatedConfig().Application().RemoveOrganization("Org1")
+	c.Application().RemoveOrganization("Org1")
 	gt.Expect(c.updated.ChannelGroup.Groups[ApplicationGroupKey].Groups["Org1"]).To(BeNil())
 }
 
@@ -140,7 +140,7 @@ func TestOrdererOrg(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			org, err := c.OriginalConfig().Orderer().Organization(tc.orgName).Configuration()
+			org, err := c.Orderer().Organization(tc.orgName).Configuration()
 			if tc.expectedErr != "" {
 				gt.Expect(err).To(MatchError(tc.expectedErr))
 				gt.Expect(Organization{}).To(Equal(org))
@@ -166,8 +166,8 @@ func TestRemoveOrdererOrg(t *testing.T) {
 
 	c := New(config)
 
-	c.UpdatedConfig().Orderer().RemoveOrganization("OrdererOrg")
-	gt.Expect(c.UpdatedConfig().Orderer().Organization("OrdererOrg").OrdererOrg).To(BeNil())
+	c.Orderer().RemoveOrganization("OrdererOrg")
+	gt.Expect(c.Orderer().Organization("OrdererOrg")).To(BeNil())
 }
 
 func TestConsortiumOrg(t *testing.T) {
@@ -206,7 +206,7 @@ func TestConsortiumOrg(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			org, err := c.UpdatedConfig().Consortiums().Consortium(tc.consortiumName).Organization(tc.orgName).Configuration()
+			org, err := c.Consortiums().Consortium(tc.consortiumName).Organization(tc.orgName).Configuration()
 			if tc.expectedErr != "" {
 				gt.Expect(Organization{}).To(Equal(org))
 				gt.Expect(err).To(MatchError(tc.expectedErr))
@@ -232,8 +232,8 @@ func TestRemoveConsortiumOrg(t *testing.T) {
 
 	c := New(config)
 
-	c.UpdatedConfig().Consortiums().Consortium("Consortium1").RemoveOrganization("Org1")
-	gt.Expect(c.UpdatedConfig().Consortiums().Consortium("Consortium1").Organization("Org1").ConsortiumOrg).To(BeNil())
+	c.Consortiums().Consortium("Consortium1").RemoveOrganization("Org1")
+	gt.Expect(c.Consortiums().Consortium("Consortium1").Organization("Org1")).To(BeNil())
 }
 
 func TestNewOrgConfigGroup(t *testing.T) {

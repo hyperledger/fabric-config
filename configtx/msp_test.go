@@ -64,7 +64,7 @@ func TestApplicationMSP(t *testing.T) {
 
 	c := New(config)
 
-	msp, err := c.UpdatedConfig().Application().Organization("Org1").MSP()
+	msp, err := c.Application().Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(msp).To(Equal(expectedMSP))
 }
@@ -90,7 +90,7 @@ func TestOrdererMSP(t *testing.T) {
 
 	c := New(config)
 
-	msp, err := c.OriginalConfig().Orderer().Organization("OrdererOrg").MSP()
+	msp, err := c.Orderer().Organization("OrdererOrg").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(msp).To(Equal(expectedMSP))
 }
@@ -116,7 +116,7 @@ func TestConsortiumMSP(t *testing.T) {
 
 	c := New(config)
 
-	msp, err := c.OriginalConfig().Consortiums().Consortium("Consortium1").Organization("Org1").MSP()
+	msp, err := c.Consortiums().Consortium("Consortium1").Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(msp).To(Equal(expectedMSP))
 }
@@ -257,8 +257,8 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			}
 
 			c := &ConfigTx{
-				original: &OriginalConfig{Config: config},
-				updated:  &UpdatedConfig{Config: config},
+				original: config,
+				updated:  config,
 			}
 			if tt.mspMod != nil && tt.orgType != ConsortiumsGroupKey {
 				baseMSP, _ := baseMSP(t)
@@ -282,13 +282,13 @@ func TestMSPConfigurationFailures(t *testing.T) {
 
 			switch tt.orgType {
 			case ApplicationGroupKey:
-				_, err := c.UpdatedConfig().Application().Organization(tt.orgName).MSP()
+				_, err := c.Application().Organization(tt.orgName).MSP()
 				gt.Expect(err).To(MatchError(tt.expectedErr))
 			case OrdererGroupKey:
-				_, err := c.OriginalConfig().Orderer().Organization(tt.orgName).MSP()
+				_, err := c.Orderer().Organization(tt.orgName).MSP()
 				gt.Expect(err).To(MatchError(tt.expectedErr))
 			case ConsortiumsGroupKey:
-				_, err := c.UpdatedConfig().Consortiums().Consortium(tt.consortiumName).Organization(tt.orgName).MSP()
+				_, err := c.Consortiums().Consortium(tt.consortiumName).Organization(tt.orgName).MSP()
 				gt.Expect(err).To(MatchError(tt.expectedErr))
 			default:
 				t.Fatalf("invalid org type %s", tt.orgType)
@@ -432,7 +432,7 @@ func TestSetConsortiumMSP(t *testing.T) {
 	}
 	c := New(config)
 
-	consortium1 := c.UpdatedConfig().Consortiums().Consortium("Consortium1")
+	consortium1 := c.Consortiums().Consortium("Consortium1")
 	consortiumOrg1MSP, err := consortium1.Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	consortiumOrg2MSP, err := consortium1.Organization("Org2").MSP()
@@ -752,7 +752,7 @@ func TestSetConsortiumMSP(t *testing.T) {
 `, consortiumOrg1CertBase64, newIntermediateCertBase64, consortiumOrg1CRLBase64, newCRLBase64, newRootCertBase64, consortiumOrg2CertBase64, consortiumOrg2CRLBase64)
 
 	buf := bytes.Buffer{}
-	err = protolator.DeepMarshalJSON(&buf, c.UpdatedConfig().Config)
+	err = protolator.DeepMarshalJSON(&buf, c.updated)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(buf.String()).To(MatchJSON(expectedConfigJSON))
@@ -809,7 +809,7 @@ func TestSetConsortiumMSPFailure(t *testing.T) {
 			}
 			c := New(config)
 
-			consortiumOrg1 := c.UpdatedConfig().Consortiums().Consortium("Consortium1").Organization("Org1")
+			consortiumOrg1 := c.Consortiums().Consortium("Consortium1").Organization("Org1")
 			consortiumOrg1MSP, err := consortiumOrg1.MSP()
 			gt.Expect(err).NotTo(HaveOccurred())
 
@@ -832,7 +832,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 	}
 	c := New(config)
 
-	ordererMSP, err := c.OriginalConfig().Orderer().Organization("OrdererOrg").MSP()
+	ordererMSP, err := c.Orderer().Organization("OrdererOrg").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	ordererCertBase64, ordererCRLBase64 := certCRLBase64(t, ordererMSP)
@@ -852,14 +852,14 @@ func TestUpdateOrdererMSP(t *testing.T) {
 		PrivateKey:  privKeys[0],
 		MSPID:       "MSPID",
 	}
-	newCRL, err := c.UpdatedConfig().Orderer().Organization("OrdererOrg").CreateMSPCRL(signingIdentity, certToRevoke)
+	newCRL, err := c.Orderer().Organization("OrdererOrg").CreateMSPCRL(signingIdentity, certToRevoke)
 	gt.Expect(err).NotTo(HaveOccurred())
 	pemNewCRL, err := pemEncodeCRL(newCRL)
 	gt.Expect(err).NotTo(HaveOccurred())
 	newCRLBase64 := base64.StdEncoding.EncodeToString(pemNewCRL)
 	ordererMSP.RevocationList = append(ordererMSP.RevocationList, newCRL)
 
-	err = c.UpdatedConfig().Orderer().Organization("OrdererOrg").SetMSP(ordererMSP)
+	err = c.Orderer().Organization("OrdererOrg").SetMSP(ordererMSP)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	expectedConfigJSON := fmt.Sprintf(`
@@ -1092,7 +1092,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 }`, ordererCertBase64, newIntermediateCertBase64, ordererCRLBase64, newCRLBase64, newRootCertBase64)
 
 	buf := bytes.Buffer{}
-	err = protolator.DeepMarshalJSON(&buf, c.UpdatedConfig().Config)
+	err = protolator.DeepMarshalJSON(&buf, c.updated)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(buf.String()).To(MatchJSON(expectedConfigJSON))
@@ -1146,11 +1146,11 @@ func TestUpdateOrdererMSPFailure(t *testing.T) {
 			}
 			c := New(config)
 
-			ordererMSP, err := c.OriginalConfig().Orderer().Organization("OrdererOrg").MSP()
+			ordererMSP, err := c.Orderer().Organization("OrdererOrg").MSP()
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			ordererMSP = tc.mspMod(ordererMSP)
-			err = c.UpdatedConfig().Orderer().Organization(tc.orgName).SetMSP(ordererMSP)
+			err = c.Orderer().Organization(tc.orgName).SetMSP(ordererMSP)
 			gt.Expect(err).To(MatchError(tc.expectedErr))
 		})
 	}
@@ -1168,9 +1168,9 @@ func TestSetApplicationMSP(t *testing.T) {
 
 	c := New(config)
 
-	org1MSP, err := c.UpdatedConfig().Application().Organization("Org1").MSP()
+	org1MSP, err := c.Application().Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
-	org2MSP, err := c.UpdatedConfig().Application().Organization("Org2").MSP()
+	org2MSP, err := c.Application().Organization("Org2").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	org1CertBase64, org1CRLBase64 := certCRLBase64(t, org1MSP)
 	org2CertBase64, org2CRLBase64 := certCRLBase64(t, org2MSP)
@@ -1191,14 +1191,14 @@ func TestSetApplicationMSP(t *testing.T) {
 		PrivateKey:  privKey,
 		MSPID:       "MSPID",
 	}
-	newCRL, err := c.UpdatedConfig().Application().Organization("Org1").CreateMSPCRL(signingIdentity, certToRevoke)
+	newCRL, err := c.Application().Organization("Org1").CreateMSPCRL(signingIdentity, certToRevoke)
 	gt.Expect(err).NotTo(HaveOccurred())
 	pemNewCRL, err := pemEncodeCRL(newCRL)
 	gt.Expect(err).NotTo(HaveOccurred())
 	newCRLBase64 := base64.StdEncoding.EncodeToString(pemNewCRL)
 	org1MSP.RevocationList = append(org1MSP.RevocationList, newCRL)
 
-	err = c.UpdatedConfig().Application().Organization("Org1").SetMSP(org1MSP)
+	err = c.Application().Organization("Org1").SetMSP(org1MSP)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	expectedConfigJSON := fmt.Sprintf(`
@@ -1526,7 +1526,7 @@ func TestSetApplicationMSP(t *testing.T) {
 `, org1CertBase64, newIntermediateCertBase64, org1CRLBase64, newCRLBase64, newRootCertBase64, org2CertBase64, org2CRLBase64)
 
 	buf := bytes.Buffer{}
-	err = protolator.DeepMarshalJSON(&buf, c.UpdatedConfig().Config)
+	err = protolator.DeepMarshalJSON(&buf, c.updated)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(buf.String()).To(MatchJSON(expectedConfigJSON))
@@ -1649,11 +1649,11 @@ func TestSetApplicationMSPFailure(t *testing.T) {
 
 			c := New(config)
 
-			org1MSP, err := c.UpdatedConfig().Application().Organization("Org1").MSP()
+			org1MSP, err := c.Application().Organization("Org1").MSP()
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			org1MSP = tc.mspMod(org1MSP)
-			err = c.UpdatedConfig().Application().Organization(tc.orgName).SetMSP(org1MSP)
+			err = c.Application().Organization(tc.orgName).SetMSP(org1MSP)
 			gt.Expect(err).To(MatchError(tc.expectedErr))
 		})
 	}
@@ -1671,20 +1671,20 @@ func TestCreateApplicationMSPCRL(t *testing.T) {
 
 	c := New(config)
 
-	org1MSP, err := c.UpdatedConfig().Application().Organization("Org1").MSP()
+	org1MSP, err := c.Application().Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	org1RootCert := org1MSP.RootCerts[0]
 	org1PrivKey := privKeys[0]
 
 	// update org2MSP to include an intemediate cert that is different
 	// from the root cert
-	org2MSP, err := c.UpdatedConfig().Application().Organization("Org2").MSP()
+	org2MSP, err := c.Application().Organization("Org2").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	org2Cert := org2MSP.RootCerts[0]
 	org2PrivKey := privKeys[1]
 	org2IntermediateCert, org2IntermediatePrivKey := generateIntermediateCACertAndPrivateKey(t, "org2.example.com", org2Cert, org2PrivKey)
 	org2MSP.IntermediateCerts = append(org2MSP.IntermediateCerts, org2IntermediateCert)
-	err = c.UpdatedConfig().Application().Organization("Org2").SetMSP(org2MSP)
+	err = c.Application().Organization("Org2").SetMSP(org2MSP)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	tests := []struct {
@@ -1724,7 +1724,7 @@ func TestCreateApplicationMSPCRL(t *testing.T) {
 				PrivateKey:  tc.caPrivKey,
 				MSPID:       "MSPID",
 			}
-			crl, err := c.UpdatedConfig().Application().Organization(tc.orgName).CreateMSPCRL(signingIdentity, certsToRevoke...)
+			crl, err := c.Application().Organization(tc.orgName).CreateMSPCRL(signingIdentity, certsToRevoke...)
 			gt.Expect(err).NotTo(HaveOccurred())
 			err = tc.caCert.CheckCRLSignature(crl)
 			gt.Expect(err).NotTo(HaveOccurred())
@@ -1748,13 +1748,13 @@ func TestCreateApplicationMSPCRLFailure(t *testing.T) {
 
 	c := New(config)
 
-	org1MSP, err := c.UpdatedConfig().Application().Organization("Org1").MSP()
+	org1MSP, err := c.Application().Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	org1Cert := org1MSP.RootCerts[0]
 	org1PrivKey := privKeys[0]
 	org1CertToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org1.example.com", org1Cert, org1PrivKey)
 
-	org2MSP, err := c.UpdatedConfig().Application().Organization("Org2").MSP()
+	org2MSP, err := c.Application().Organization("Org2").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	org2Cert := org2MSP.RootCerts[0]
 	org2PrivKey := privKeys[1]
@@ -1797,7 +1797,7 @@ func TestCreateApplicationMSPCRLFailure(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			newCRL, err := c.UpdatedConfig().Application().Organization(tc.orgName).CreateMSPCRL(tc.signingIdentity, tc.certToRevoke)
+			newCRL, err := c.Application().Organization(tc.orgName).CreateMSPCRL(tc.signingIdentity, tc.certToRevoke)
 			gt.Expect(err).To(MatchError(tc.expectedErr))
 			gt.Expect(newCRL).To(BeNil())
 		})
