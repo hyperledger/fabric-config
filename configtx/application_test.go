@@ -8,6 +8,7 @@ package configtx
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"fmt"
 	"testing"
 
@@ -23,7 +24,7 @@ func TestNewApplicationGroup(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	application := baseApplication(t)
+	application, _ := baseApplication(t)
 
 	expectedApplicationGroup := `
 {
@@ -191,7 +192,7 @@ func TestNewApplicationGroupFailure(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			application := baseApplication(t)
+			application, _ := baseApplication(t)
 			tt.applicationMod(&application)
 
 			configGrp, err := newApplicationGroup(application)
@@ -206,7 +207,7 @@ func TestAddAnchorPeer(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseApplicationConf := baseApplication(t)
+	baseApplicationConf, _ := baseApplication(t)
 
 	applicationGroup, err := newApplicationGroup(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -369,7 +370,7 @@ func TestRemoveAnchorPeer(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseApplicationConf := baseApplication(t)
+	baseApplicationConf, _ := baseApplication(t)
 
 	applicationGroup, err := newApplicationGroup(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -523,7 +524,7 @@ func TestRemoveAnchorPeerFailure(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseApplicationConf := baseApplication(t)
+			baseApplicationConf, _ := baseApplication(t)
 
 			applicationGroup, err := newApplicationGroup(baseApplicationConf)
 			gt.Expect(err).NotTo(HaveOccurred())
@@ -553,7 +554,8 @@ func TestAnchorPeers(t *testing.T) {
 
 	channelGroup := newConfigGroup()
 
-	applicationGroup, err := newApplicationGroup(baseApplication(t))
+	application, _ := baseApplication(t)
+	applicationGroup, err := newApplicationGroup(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
@@ -599,13 +601,15 @@ func TestAnchorPeerFailures(t *testing.T) {
 
 	channelGroup := newConfigGroup()
 
-	applicationGroup, err := newApplicationGroup(baseApplication(t))
+	application, _ := baseApplication(t)
+	applicationGroup, err := newApplicationGroup(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
+	baseMSP, _ := baseMSP(t)
 	orgNoAnchor := Organization{
 		Name:     "Org1",
 		Policies: applicationOrgStandardPolicies(),
-		MSP:      baseMSP(t),
+		MSP:      baseMSP,
 	}
 	orgGroup, err := newOrgConfigGroup(orgNoAnchor)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -674,7 +678,7 @@ func TestSetACL(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			channelGroup := newConfigGroup()
-			baseApplication := baseApplication(t)
+			baseApplication, _ := baseApplication(t)
 			applicationGroup, err := newApplicationGroup(baseApplication)
 
 			channelGroup.Groups[ApplicationGroupKey] = applicationGroup
@@ -741,7 +745,7 @@ func TestRemoveACL(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			channelGroup := newConfigGroup()
-			baseApplication := baseApplication(t)
+			baseApplication, _ := baseApplication(t)
 			baseApplication.ACLs["acl2"] = "acl2Value"
 			baseApplication.ACLs["acl3"] = "acl3Value"
 			applicationGroup, err := newApplicationGroup(baseApplication)
@@ -774,7 +778,8 @@ func TestSetApplicationOrg(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	appGroup, err := newApplicationGroup(baseApplication(t))
+	application, _ := baseApplication(t)
+	appGroup, err := newApplicationGroup(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -787,10 +792,11 @@ func TestSetApplicationOrg(t *testing.T) {
 
 	c := New(config)
 
+	baseMSP, _ := baseMSP(t)
 	org := Organization{
 		Name:     "Org3",
 		Policies: applicationOrgStandardPolicies(),
-		MSP:      baseMSP(t),
+		MSP:      baseMSP,
 		AnchorPeers: []Address{
 			{
 				Host: "127.0.0.1",
@@ -799,7 +805,7 @@ func TestSetApplicationOrg(t *testing.T) {
 		},
 	}
 
-	certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, org.MSP)
+	certBase64, crlBase64 := certCRLBase64(t, org.MSP)
 	expectedConfigJSON := fmt.Sprintf(`
 {
 	"groups": {},
@@ -920,13 +926,7 @@ func TestSetApplicationOrg(t *testing.T) {
 					"root_certs": [
 						"%[1]s"
 					],
-					"signing_identity": {
-						"private_signer": {
-							"key_identifier": "SKI-1",
-							"key_material": "%[3]s"
-						},
-						"public_signer": "%[1]s"
-					},
+					"signing_identity": null,
 					"tls_intermediate_certs": [
 						"%[1]s"
 					],
@@ -941,7 +941,7 @@ func TestSetApplicationOrg(t *testing.T) {
 	},
 	"version": "0"
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 
 	err = c.SetApplicationOrg(org)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -958,7 +958,8 @@ func TestSetApplicationOrgFailures(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	appGroup, err := newApplicationGroup(baseApplication(t))
+	application, _ := baseApplication(t)
+	appGroup, err := newApplicationGroup(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -983,7 +984,7 @@ func TestApplicationConfiguration(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	baseApplicationConf := baseApplication(t)
+	baseApplicationConf, _ := baseApplication(t)
 	applicationGroup, err := newApplicationGroup(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -1048,7 +1049,7 @@ func TestApplicationConfigurationFailure(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseApplicationConf := baseApplication(t)
+			baseApplicationConf, _ := baseApplication(t)
 			applicationGroup, err := newApplicationGroup(baseApplicationConf)
 			gt.Expect(err).NotTo(HaveOccurred())
 
@@ -1078,7 +1079,7 @@ func TestApplicationACLs(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseApplicationConf := baseApplication(t)
+	baseApplicationConf, _ := baseApplication(t)
 	applicationGroup, err := newApplicationGroup(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -1102,7 +1103,7 @@ func TestApplicationACLsFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseApplicationConf := baseApplication(t)
+	baseApplicationConf, _ := baseApplication(t)
 	applicationGroup, err := newApplicationGroup(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -1125,19 +1126,21 @@ func TestApplicationACLsFailure(t *testing.T) {
 	gt.Expect(applicationACLs).To(BeNil())
 }
 
-func baseApplication(t *testing.T) Application {
+func baseApplication(t *testing.T) (Application, []*ecdsa.PrivateKey) {
+	org1BaseMSP, org1PrivKey := baseMSP(t)
+	org2BaseMSP, org2PrivKey := baseMSP(t)
 	return Application{
 		Policies: standardPolicies(),
 		Organizations: []Organization{
 			{
 				Name:     "Org1",
 				Policies: applicationOrgStandardPolicies(),
-				MSP:      baseMSP(t),
+				MSP:      org1BaseMSP,
 			},
 			{
 				Name:     "Org2",
 				Policies: applicationOrgStandardPolicies(),
-				MSP:      baseMSP(t),
+				MSP:      org2BaseMSP,
 			},
 		},
 		Capabilities: []string{
@@ -1146,5 +1149,5 @@ func baseApplication(t *testing.T) Application {
 		ACLs: map[string]string{
 			"acl1": "hi",
 		},
-	}
+	}, []*ecdsa.PrivateKey{org1PrivKey, org2PrivKey}
 }

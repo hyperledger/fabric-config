@@ -121,7 +121,7 @@ func TestOrdererOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channel := baseSystemChannelProfile(t)
+	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -172,7 +172,7 @@ func TestRemoveOrdererOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channel := baseSystemChannelProfile(t)
+	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -190,7 +190,7 @@ func TestConsortiumOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channel := baseSystemChannelProfile(t)
+	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -250,7 +250,7 @@ func TestRemoveConsortiumOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channel := baseSystemChannelProfile(t)
+	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -271,11 +271,12 @@ func TestNewOrgConfigGroup(t *testing.T) {
 		t.Parallel()
 		gt := NewGomegaWithT(t)
 
-		org := baseSystemChannelProfile(t).Orderer.Organizations[0]
+		baseSystemChannelProfile, _, _ := baseSystemChannelProfile(t)
+		org := baseSystemChannelProfile.Orderer.Organizations[0]
 		configGroup, err := newOrgConfigGroup(org)
 		gt.Expect(err).NotTo(HaveOccurred())
 
-		certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, org.MSP)
+		certBase64, crlBase64 := certCRLBase64(t, org.MSP)
 
 		// The organization is from network.BasicSolo Profile
 		// configtxgen -printOrg Org1
@@ -385,13 +386,7 @@ func TestNewOrgConfigGroup(t *testing.T) {
 					"root_certs": [
 						"%[1]s"
 					],
-					"signing_identity": {
-						"private_signer": {
-							"key_identifier": "SKI-1",
-							"key_material": "%[3]s"
-						},
-						"public_signer": "%[1]s"
-					},
+					"signing_identity": null,
 					"tls_intermediate_certs": [
 						"%[1]s"
 					],
@@ -406,7 +401,7 @@ func TestNewOrgConfigGroup(t *testing.T) {
 	},
 	"version": "0"
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 
 		buf := bytes.Buffer{}
 		err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererOrgGroup{ConfigGroup: configGroup})
@@ -421,7 +416,8 @@ func TestNewOrgConfigGroupFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseOrg := baseSystemChannelProfile(t).Orderer.Organizations[0]
+	baseSystemChannelProfile, _, _ := baseSystemChannelProfile(t)
+	baseOrg := baseSystemChannelProfile.Orderer.Organizations[0]
 	baseOrg.Policies = nil
 
 	configGroup, err := newOrgConfigGroup(baseOrg)
@@ -430,10 +426,11 @@ func TestNewOrgConfigGroupFailure(t *testing.T) {
 }
 
 func baseApplicationOrg(t *testing.T) Organization {
+	msp, _ := baseMSP(t)
 	return Organization{
 		Name:     "Org1",
 		Policies: standardPolicies(),
-		MSP:      baseMSP(t),
+		MSP:      msp,
 		AnchorPeers: []Address{
 			{Host: "host3", Port: 123},
 		},

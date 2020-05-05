@@ -8,6 +8,7 @@ package configtx
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"testing"
@@ -401,16 +402,16 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	profile := baseSystemChannelProfile(t)
+	profile, _, _ := baseSystemChannelProfile(t)
 
 	block, err := NewSystemChannelGenesisBlock(profile, "testsystemchannel")
 	gt.Expect(err).ToNot(HaveOccurred())
 	gt.Expect(block).ToNot(BeNil())
 	gt.Expect(block.Header.Number).To(Equal(uint64(0)))
 
-	org1CertBase64, org1PkBase64, org1CrlBase64 := certPrivKeyCRLBase64(t, profile.Consortiums[0].Organizations[0].MSP)
-	org2CertBase64, org2PkBase64, org2CrlBase64 := certPrivKeyCRLBase64(t, profile.Consortiums[0].Organizations[1].MSP)
-	ordererOrgCertBase64, ordererOrgPkBase64, ordererOrgCrlBase64 := certPrivKeyCRLBase64(t, profile.Orderer.Organizations[0].MSP)
+	org1CertBase64, org1CrlBase64 := certCRLBase64(t, profile.Consortiums[0].Organizations[0].MSP)
+	org2CertBase64, org2CrlBase64 := certCRLBase64(t, profile.Consortiums[0].Organizations[1].MSP)
+	ordererOrgCertBase64, ordererOrgCrlBase64 := certCRLBase64(t, profile.Orderer.Organizations[0].MSP)
 
 	expectBlockJSON := fmt.Sprintf(`
 {
@@ -522,13 +523,7 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 																		"root_certs": [
 																			"%[1]s"
 																		],
-																		"signing_identity": {
-																			"private_signer": {
-																				"key_identifier": "SKI-1",
-																				"key_material": "%[3]s"
-																			},
-																			"public_signer": "%[1]s"
-																		},
+																		"signing_identity": null,
 																		"tls_intermediate_certs": [
 																			"%[1]s"
 																		],
@@ -598,7 +593,7 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 																"value": {
 																	"config": {
 																		"admins": [
-																			"%[4]s"
+																			"%[3]s"
 																		],
 																		"crypto_config": {
 																			"identity_identifier_hash_function": "SHA256",
@@ -606,51 +601,45 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 																		},
 																		"fabric_node_ous": {
 																			"admin_ou_identifier": {
-																				"certificate": "%[4]s",
+																				"certificate": "%[3]s",
 																				"organizational_unit_identifier": "OUID"
 																			},
 																			"client_ou_identifier": {
-																				"certificate": "%[4]s",
+																				"certificate": "%[3]s",
 																				"organizational_unit_identifier": "OUID"
 																			},
 																			"enable": false,
 																			"orderer_ou_identifier": {
-																				"certificate": "%[4]s",
+																				"certificate": "%[3]s",
 																				"organizational_unit_identifier": "OUID"
 																			},
 																			"peer_ou_identifier": {
-																				"certificate": "%[4]s",
+																				"certificate": "%[3]s",
 																				"organizational_unit_identifier": "OUID"
 																			}
 																		},
 																		"intermediate_certs": [
-																			"%[4]s"
+																			"%[3]s"
 																		],
 																		"name": "MSPID",
 																		"organizational_unit_identifiers": [
 																			{
-																				"certificate": "%[4]s",
+																				"certificate": "%[3]s",
 																				"organizational_unit_identifier": "OUID"
 																			}
 																		],
 																		"revocation_list": [
-																			"%[5]s"
+																			"%[4]s"
 																		],
 																		"root_certs": [
-																			"%[4]s"
+																			"%[3]s"
 																		],
-																		"signing_identity": {
-																			"private_signer": {
-																				"key_identifier": "SKI-1",
-																				"key_material": "%[6]s"
-																			},
-																			"public_signer": "%[4]s"
-																		},
+																		"signing_identity": null,
 																		"tls_intermediate_certs": [
-																			"%[4]s"
+																			"%[3]s"
 																		],
 																		"tls_root_certs": [
-																			"%[4]s"
+																			"%[3]s"
 																		]
 																	},
 																	"type": 0
@@ -768,7 +757,7 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 														"value": {
 															"config": {
 																"admins": [
-																	"%[7]s"
+																	"%[5]s"
 																],
 																"crypto_config": {
 																	"identity_identifier_hash_function": "SHA256",
@@ -776,51 +765,45 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 																},
 																"fabric_node_ous": {
 																	"admin_ou_identifier": {
-																		"certificate": "%[7]s",
+																		"certificate": "%[5]s",
 																		"organizational_unit_identifier": "OUID"
 																	},
 																	"client_ou_identifier": {
-																		"certificate": "%[7]s",
+																		"certificate": "%[5]s",
 																		"organizational_unit_identifier": "OUID"
 																	},
 																	"enable": false,
 																	"orderer_ou_identifier": {
-																		"certificate": "%[7]s",
+																		"certificate": "%[5]s",
 																		"organizational_unit_identifier": "OUID"
 																	},
 																	"peer_ou_identifier": {
-																		"certificate": "%[7]s",
+																		"certificate": "%[5]s",
 																		"organizational_unit_identifier": "OUID"
 																	}
 																},
 																"intermediate_certs": [
-																	"%[7]s"
+																	"%[5]s"
 																],
 																"name": "MSPID",
 																"organizational_unit_identifiers": [
 																	{
-																		"certificate": "%[7]s",
+																		"certificate": "%[5]s",
 																		"organizational_unit_identifier": "OUID"
 																	}
 																],
 																"revocation_list": [
-																	"%[8]s"
+																	"%[6]s"
 																],
 																"root_certs": [
-																	"%[7]s"
+																	"%[5]s"
 																],
-																"signing_identity": {
-																	"private_signer": {
-																		"key_identifier": "SKI-1",
-																		"key_material": "%[9]s"
-																	},
-																	"public_signer": "%[7]s"
-																},
+																"signing_identity": null,
 																"tls_intermediate_certs": [
-																	"%[7]s"
+																	"%[5]s"
 																],
 																"tls_root_certs": [
-																	"%[7]s"
+																	"%[5]s"
 																]
 															},
 															"type": 0
@@ -1020,7 +1003,7 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 		]
 	}
 }
-`, org1CertBase64, org1CrlBase64, org1PkBase64, org2CertBase64, org2CrlBase64, org2PkBase64, ordererOrgCertBase64, ordererOrgCrlBase64, ordererOrgPkBase64)
+`, org1CertBase64, org1CrlBase64, org2CertBase64, org2CrlBase64, ordererOrgCertBase64, ordererOrgCrlBase64)
 
 	expectedBlock := &cb.Block{}
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectBlockJSON), expectedBlock)
@@ -1077,7 +1060,7 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 		{
 			testName: "When channel ID is not specified in config",
 			profileMod: func() Channel {
-				profile := baseSystemChannelProfile(t)
+				profile, _, _ := baseSystemChannelProfile(t)
 				return profile
 			},
 			channelID: "",
@@ -1086,7 +1069,7 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 		{
 			testName: "When creating the default system config template with empty orderer endpoints",
 			profileMod: func() Channel {
-				profile := baseSystemChannelProfile(t)
+				profile, _, _ := baseSystemChannelProfile(t)
 				profile.Orderer.Addresses = []Address{}
 				return profile
 			},
@@ -1096,7 +1079,7 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 		{
 			testName: "When creating the default config template with empty capabilities",
 			profileMod: func() Channel {
-				profile := baseSystemChannelProfile(t)
+				profile, _, _ := baseSystemChannelProfile(t)
 				profile.Capabilities = []string{}
 				return profile
 			},
@@ -1106,7 +1089,7 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 		{
 			testName: "When creating the default config template without consortiums",
 			profileMod: func() Channel {
-				profile := baseSystemChannelProfile(t)
+				profile, _, _ := baseSystemChannelProfile(t)
 				profile.Orderer = Orderer{}
 				return profile
 			},
@@ -1233,9 +1216,9 @@ func TestComputeUpdateFailures(t *testing.T) {
 func TestChannelConfiguration(t *testing.T) {
 	t.Parallel()
 
-	baseApplication := baseApplication(t)
-	baseConsortiums := baseConsortiums(t)
-	baseOrderer := baseSoloOrderer(t)
+	baseApplication, _ := baseApplication(t)
+	baseConsortiums, _ := baseConsortiums(t)
+	baseOrderer, _ := baseSoloOrderer(t)
 	policies := standardPolicies()
 
 	tests := []struct {
@@ -1319,20 +1302,23 @@ func TestChannelConfiguration(t *testing.T) {
 }
 
 func baseProfile(t *testing.T) Channel {
+	application, _ := baseApplication(t)
 	return Channel{
 		Consortium:   "SampleConsortium",
-		Application:  baseApplication(t),
+		Application:  application,
 		Capabilities: []string{"V2_0"},
 	}
 }
 
-func baseSystemChannelProfile(t *testing.T) Channel {
+func baseSystemChannelProfile(t *testing.T) (Channel, []*ecdsa.PrivateKey, *ecdsa.PrivateKey) {
+	consortiums, consortiumsPrivKey := baseConsortiums(t)
+	orderer, ordererPrivKeys := baseSoloOrderer(t)
 	return Channel{
-		Consortiums:  baseConsortiums(t),
-		Orderer:      baseSoloOrderer(t),
+		Consortiums:  consortiums,
+		Orderer:      orderer,
 		Capabilities: []string{"V2_0"},
 		Policies:     standardPolicies(),
-	}
+	}, consortiumsPrivKey, ordererPrivKeys[0]
 }
 
 func standardPolicies() map[string]Policy {
@@ -1387,24 +1373,24 @@ func ordererStandardPolicies() map[string]Policy {
 
 // baseApplicationChannelGroup creates a channel config group
 // that only contains an Application group.
-func baseApplicationChannelGroup(t *testing.T) (*cb.ConfigGroup, error) {
+func baseApplicationChannelGroup(t *testing.T) (*cb.ConfigGroup, []*ecdsa.PrivateKey, error) {
 	channelGroup := newConfigGroup()
 
-	application := baseApplication(t)
+	application, privKeys := baseApplication(t)
 	applicationGroup, err := newApplicationGroup(application)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for _, org := range application.Organizations {
 		orgGroup, err := newOrgConfigGroup(org)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		applicationGroup.Groups[org.Name] = orgGroup
 	}
 
 	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
 
-	return channelGroup, nil
+	return channelGroup, privKeys, nil
 }

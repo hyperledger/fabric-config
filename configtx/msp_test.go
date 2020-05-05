@@ -32,9 +32,10 @@ func TestApplicationMSP(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	expectedMSP := baseMSP(t)
+	expectedMSP, _ := baseMSP(t)
 
-	applicationGroup, err := newApplicationGroup(baseApplication(t))
+	application, _ := baseApplication(t)
+	applicationGroup, err := newApplicationGroup(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	// We need to add the base MSP config to the base application since
@@ -76,7 +77,7 @@ func TestOrdererMSP(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	soloOrderer := baseSoloOrderer(t)
+	soloOrderer, _ := baseSoloOrderer(t)
 	expectedMSP := soloOrderer.Organizations[0].MSP
 
 	ordererGroup, err := newOrdererGroup(soloOrderer)
@@ -105,7 +106,7 @@ func TestConsortiumMSP(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	consortiums := baseConsortiums(t)
+	consortiums, _ := baseConsortiums(t)
 	expectedMSP := consortiums[0].Organizations[0].MSP
 
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
@@ -196,15 +197,6 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			expectedErr: "parsing admin certs: asn1: syntax error: sequence truncated",
 		},
 		{
-			name:    "Bad public signer",
-			orgType: OrdererGroupKey,
-			orgName: "OrdererOrg",
-			mspMod: func(msp *MSP) {
-				msp.SigningIdentity.PublicSigner = badCert
-			},
-			expectedErr: "parsing signing identity public signer: asn1: syntax error: sequence truncated",
-		},
-		{
 			name:    "Bad OU Identifier cert",
 			orgType: OrdererGroupKey,
 			orgName: "OrdererOrg",
@@ -276,13 +268,16 @@ func TestMSPConfigurationFailures(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			consortiumsGroup, err := newConsortiumsGroup(baseConsortiums(t))
+			consortiums, _ := baseConsortiums(t)
+			consortiumsGroup, err := newConsortiumsGroup(consortiums)
 			gt.Expect(err).NotTo(HaveOccurred())
 
-			ordererGroup, err := newOrdererGroup(baseSoloOrderer(t))
+			orderer, _ := baseSoloOrderer(t)
+			ordererGroup, err := newOrdererGroup(orderer)
 			gt.Expect(err).NotTo(HaveOccurred())
 
-			applicationGroup, err := newApplicationGroup(baseApplication(t))
+			application, _ := baseApplication(t)
+			applicationGroup, err := newApplicationGroup(application)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			config := &cb.Config{
@@ -300,7 +295,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 				updated:  config,
 			}
 			if tt.mspMod != nil && tt.orgType != ConsortiumsGroupKey {
-				baseMSP := baseMSP(t)
+				baseMSP, _ := baseMSP(t)
 
 				tt.mspMod(&baseMSP)
 
@@ -341,8 +336,8 @@ func TestMSPToProto(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	msp := baseMSP(t)
-	certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, msp)
+	msp, _ := baseMSP(t)
+	certBase64, crlBase64 := certCRLBase64(t, msp)
 
 	expectedFabricMSPConfigProtoJSON := fmt.Sprintf(`
 {
@@ -388,13 +383,7 @@ func TestMSPToProto(t *testing.T) {
 	"root_certs": [
 		"%[1]s"
 	],
-	"signing_identity": {
-		"private_signer": {
-			"key_identifier": "SKI-1",
-			"key_material": "%[3]s"
-		},
-		"public_signer": "%[1]s"
-	},
+	"signing_identity": null,
 	"tls_intermediate_certs": [
 		"%[1]s"
 	],
@@ -402,7 +391,7 @@ func TestMSPToProto(t *testing.T) {
 		"%[1]s"
 	]
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 	expectedFabricMSPConfigProto := &mb.FabricMSPConfig{}
 	err := protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedFabricMSPConfigProtoJSON), expectedFabricMSPConfigProto)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -417,9 +406,9 @@ func TestMSPToProtoNoNodeOUs(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	msp := baseMSP(t)
+	msp, _ := baseMSP(t)
 	msp.NodeOUs = membership.NodeOUs{}
-	certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, msp)
+	certBase64, crlBase64 := certCRLBase64(t, msp)
 
 	expectedFabricMSPConfigProtoJSON := fmt.Sprintf(`
 {
@@ -447,13 +436,7 @@ func TestMSPToProtoNoNodeOUs(t *testing.T) {
 	"root_certs": [
 		"%[1]s"
 	],
-	"signing_identity": {
-		"private_signer": {
-			"key_identifier": "SKI-1",
-			"key_material": "%[3]s"
-		},
-		"public_signer": "%[1]s"
-	},
+	"signing_identity": null,
 	"tls_intermediate_certs": [
 		"%[1]s"
 	],
@@ -461,7 +444,7 @@ func TestMSPToProtoNoNodeOUs(t *testing.T) {
 		"%[1]s"
 	]
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 	expectedFabricMSPConfigProto := &mb.FabricMSPConfig{}
 	err := protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedFabricMSPConfigProtoJSON), expectedFabricMSPConfigProto)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -470,24 +453,12 @@ func TestMSPToProtoNoNodeOUs(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(fabricMSPConfigProto).To(Equal(expectedFabricMSPConfigProto))
 }
-func TestMSPToProtoFailure(t *testing.T) {
-	t.Parallel()
-
-	gt := NewGomegaWithT(t)
-
-	fabricMSPConfig := baseMSP(t)
-	fabricMSPConfig.SigningIdentity.PrivateSigner.KeyMaterial = &ecdsa.PrivateKey{}
-
-	fabricMSPConfigProto, err := fabricMSPConfig.toProto()
-	gt.Expect(err).To(MatchError("pem encode PKCS#8 private key: marshaling PKCS#8 private key: x509: unknown curve while marshaling to PKCS#8"))
-	gt.Expect(fabricMSPConfigProto).To(BeNil())
-}
 
 func TestUpdateConsortiumMsp(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	consortiumGroup, err := baseConsortiumChannelGroup(t)
+	consortiumGroup, privKeys, err := baseConsortiumChannelGroup(t)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -499,8 +470,8 @@ func TestUpdateConsortiumMsp(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	consortiumOrg2MSP, err := c.ConsortiumMSP("Consortium1", "Org2")
 	gt.Expect(err).NotTo(HaveOccurred())
-	consortiumOrg1CertBase64, consortiumOrg1PKBase64, consortiumOrg1CRLBase64 := certPrivKeyCRLBase64(t, consortiumOrg1MSP)
-	consortiumOrg2CertBase64, consortiumOrg2PKBase64, consortiumOrg2CRLBase64 := certPrivKeyCRLBase64(t, consortiumOrg2MSP)
+	consortiumOrg1CertBase64, consortiumOrg1CRLBase64 := certCRLBase64(t, consortiumOrg1MSP)
+	consortiumOrg2CertBase64, consortiumOrg2CRLBase64 := certCRLBase64(t, consortiumOrg2MSP)
 
 	newRootCert, newRootPrivKey := generateCACertAndPrivateKey(t, "anotherca-org1.example.com")
 	newRootCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(newRootCert))
@@ -510,7 +481,8 @@ func TestUpdateConsortiumMsp(t *testing.T) {
 	newIntermediateCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(newIntermediateCert))
 	consortiumOrg1MSP.IntermediateCerts = append(consortiumOrg1MSP.IntermediateCerts, newIntermediateCert)
 
-	cert, privKey, _ := certPrivKeyCRL(consortiumOrg1MSP)
+	cert := consortiumOrg1MSP.RootCerts[0]
+	privKey := privKeys[0]
 	certToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org1.example.com", cert, privKey)
 	signingIdentity := &SigningIdentity{
 		Certificate: cert,
@@ -634,13 +606,7 @@ func TestUpdateConsortiumMsp(t *testing.T) {
 													"%[1]s",
 													"%[5]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[6]s"
-													},
-													"public_signer": "%[1]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
 													"%[1]s"
 												],
@@ -710,7 +676,7 @@ func TestUpdateConsortiumMsp(t *testing.T) {
 										"value": {
 											"config": {
 												"admins": [
-													"%[7]s"
+													"%[6]s"
 												],
 												"crypto_config": {
 													"identity_identifier_hash_function": "SHA256",
@@ -718,51 +684,45 @@ func TestUpdateConsortiumMsp(t *testing.T) {
 												},
 												"fabric_node_ous": {
 													"admin_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[6]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"client_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[6]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"enable": false,
 													"orderer_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[6]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"peer_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[6]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												},
 												"intermediate_certs": [
-													"%[7]s"
+													"%[6]s"
 												],
 												"name": "MSPID",
 												"organizational_unit_identifiers": [
 													{
-														"certificate": "%[7]s",
+														"certificate": "%[6]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												],
 												"revocation_list": [
-													"%[8]s"
+													"%[7]s"
 												],
 												"root_certs": [
-													"%[7]s"
+													"%[6]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[9]s"
-													},
-													"public_signer": "%[7]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
-													"%[7]s"
+													"%[6]s"
 												],
 												"tls_root_certs": [
-													"%[7]s"
+													"%[6]s"
 												]
 											},
 											"type": 0
@@ -822,7 +782,7 @@ func TestUpdateConsortiumMsp(t *testing.T) {
 	},
 	"sequence": "0"
 }
-`, consortiumOrg1CertBase64, newIntermediateCertBase64, consortiumOrg1CRLBase64, newCRLBase64, newRootCertBase64, consortiumOrg1PKBase64, consortiumOrg2CertBase64, consortiumOrg2CRLBase64, consortiumOrg2PKBase64)
+`, consortiumOrg1CertBase64, newIntermediateCertBase64, consortiumOrg1CRLBase64, newCRLBase64, newRootCertBase64, consortiumOrg2CertBase64, consortiumOrg2CRLBase64)
 
 	buf := bytes.Buffer{}
 	err = protolator.DeepMarshalJSON(&buf, c.UpdatedConfig())
@@ -892,7 +852,7 @@ func TestUpdateConsortiumMspFailure(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			consortiumGroup, err := baseConsortiumChannelGroup(t)
+			consortiumGroup, _, err := baseConsortiumChannelGroup(t)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			config := &cb.Config{
@@ -914,7 +874,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
+	channelGroup, privKeys, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -925,7 +885,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 	ordererMSP, err := c.OrdererMSP("OrdererOrg")
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	ordererCertBase64, ordererPKBase64, ordererCRLBase64 := certPrivKeyCRLBase64(t, ordererMSP)
+	ordererCertBase64, ordererCRLBase64 := certCRLBase64(t, ordererMSP)
 
 	newRootCert, newRootPrivKey := generateCACertAndPrivateKey(t, "anotherca-org1.example.com")
 	newRootCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(newRootCert))
@@ -935,11 +895,11 @@ func TestUpdateOrdererMSP(t *testing.T) {
 	newIntermediateCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(newIntermediateCert))
 	ordererMSP.IntermediateCerts = append(ordererMSP.IntermediateCerts, newIntermediateCert)
 
-	cert, privKey, _ := certPrivKeyCRL(ordererMSP)
-	certToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org1.example.com", cert, privKey)
+	cert := ordererMSP.RootCerts[0]
+	certToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org1.example.com", cert, privKeys[0])
 	signingIdentity := &SigningIdentity{
 		Certificate: cert,
-		PrivateKey:  privKey,
+		PrivateKey:  privKeys[0],
 		MSPID:       "MSPID",
 	}
 	newCRL, err := c.CreateOrdererMSPCRL("OrdererOrg", signingIdentity, certToRevoke)
@@ -1066,13 +1026,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 											"%[1]s",
 											"%[5]s"
 										],
-										"signing_identity": {
-											"private_signer": {
-												"key_identifier": "SKI-1",
-												"key_material": "%[6]s"
-											},
-											"public_signer": "%[1]s"
-										},
+										"signing_identity": null,
 										"tls_intermediate_certs": [
 											"%[1]s"
 										],
@@ -1185,7 +1139,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 		"version": "0"
 	},
 	"sequence": "0"
-}`, ordererCertBase64, newIntermediateCertBase64, ordererCRLBase64, newCRLBase64, newRootCertBase64, ordererPKBase64)
+}`, ordererCertBase64, newIntermediateCertBase64, ordererCRLBase64, newCRLBase64, newRootCertBase64)
 
 	buf := bytes.Buffer{}
 	err = protolator.DeepMarshalJSON(&buf, c.UpdatedConfig())
@@ -1242,7 +1196,7 @@ func TestUpdateOrdererMSPFailure(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			channelGroup, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
+			channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			config := &cb.Config{
@@ -1264,7 +1218,7 @@ func TestSetApplicationMSP(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, err := baseApplicationChannelGroup(t)
+	channelGroup, privateKeys, err := baseApplicationChannelGroup(t)
 	gt.Expect(err).ToNot(HaveOccurred())
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1276,8 +1230,8 @@ func TestSetApplicationMSP(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	org2MSP, err := c.ApplicationMSP("Org2")
 	gt.Expect(err).NotTo(HaveOccurred())
-	org1CertBase64, org1PKBase64, org1CRLBase64 := certPrivKeyCRLBase64(t, org1MSP)
-	org2CertBase64, org2PKBase64, org2CRLBase64 := certPrivKeyCRLBase64(t, org2MSP)
+	org1CertBase64, org1CRLBase64 := certCRLBase64(t, org1MSP)
+	org2CertBase64, org2CRLBase64 := certCRLBase64(t, org2MSP)
 
 	newRootCert, newRootPrivKey := generateCACertAndPrivateKey(t, "anotherca-org1.example.com")
 	newRootCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(newRootCert))
@@ -1287,7 +1241,8 @@ func TestSetApplicationMSP(t *testing.T) {
 	newIntermediateCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(newIntermediateCert))
 	org1MSP.IntermediateCerts = append(org1MSP.IntermediateCerts, newIntermediateCert)
 
-	cert, privKey, _ := certPrivKeyCRL(org1MSP)
+	cert := org1MSP.RootCerts[0]
+	privKey := privateKeys[0]
 	certToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org1.example.com", cert, privKey)
 	signingIdentity := &SigningIdentity{
 		Certificate: cert,
@@ -1420,13 +1375,7 @@ func TestSetApplicationMSP(t *testing.T) {
 											"%[1]s",
 											"%[5]s"
 										],
-										"signing_identity": {
-											"private_signer": {
-												"key_identifier": "SKI-1",
-												"key_material": "%[6]s"
-											},
-											"public_signer": "%[1]s"
-										},
+										"signing_identity": null,
 										"tls_intermediate_certs": [
 											"%[1]s"
 										],
@@ -1507,7 +1456,7 @@ func TestSetApplicationMSP(t *testing.T) {
 								"value": {
 									"config": {
 										"admins": [
-											"%[7]s"
+											"%[6]s"
 										],
 										"crypto_config": {
 											"identity_identifier_hash_function": "SHA256",
@@ -1515,51 +1464,45 @@ func TestSetApplicationMSP(t *testing.T) {
 										},
 										"fabric_node_ous": {
 											"admin_ou_identifier": {
-												"certificate": "%[7]s",
+												"certificate": "%[6]s",
 												"organizational_unit_identifier": "OUID"
 											},
 											"client_ou_identifier": {
-												"certificate": "%[7]s",
+												"certificate": "%[6]s",
 												"organizational_unit_identifier": "OUID"
 											},
 											"enable": false,
 											"orderer_ou_identifier": {
-												"certificate": "%[7]s",
+												"certificate": "%[6]s",
 												"organizational_unit_identifier": "OUID"
 											},
 											"peer_ou_identifier": {
-												"certificate": "%[7]s",
+												"certificate": "%[6]s",
 												"organizational_unit_identifier": "OUID"
 											}
 										},
 										"intermediate_certs": [
-											"%[7]s"
+											"%[6]s"
 										],
 										"name": "MSPID",
 										"organizational_unit_identifiers": [
 											{
-												"certificate": "%[7]s",
+												"certificate": "%[6]s",
 												"organizational_unit_identifier": "OUID"
 											}
 										],
 										"revocation_list": [
-											"%[8]s"
+											"%[7]s"
 										],
 										"root_certs": [
-											"%[7]s"
+											"%[6]s"
 										],
-										"signing_identity": {
-											"private_signer": {
-												"key_identifier": "SKI-1",
-												"key_material": "%[9]s"
-											},
-											"public_signer": "%[7]s"
-										},
+										"signing_identity": null,
 										"tls_intermediate_certs": [
-											"%[7]s"
+											"%[6]s"
 										],
 										"tls_root_certs": [
-											"%[7]s"
+											"%[6]s"
 										]
 									},
 									"type": 0
@@ -1638,7 +1581,7 @@ func TestSetApplicationMSP(t *testing.T) {
 	},
 	"sequence": "0"
 }
-`, org1CertBase64, newIntermediateCertBase64, org1CRLBase64, newCRLBase64, newRootCertBase64, org1PKBase64, org2CertBase64, org2CRLBase64, org2PKBase64)
+`, org1CertBase64, newIntermediateCertBase64, org1CRLBase64, newCRLBase64, newRootCertBase64, org2CertBase64, org2CRLBase64)
 
 	buf := bytes.Buffer{}
 	err = protolator.DeepMarshalJSON(&buf, c.UpdatedConfig())
@@ -1764,7 +1707,7 @@ func TestSetApplicationMSPFailure(t *testing.T) {
 		t.Run(tc.spec, func(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
-			channelGroup, err := baseApplicationChannelGroup(t)
+			channelGroup, _, err := baseApplicationChannelGroup(t)
 			gt.Expect(err).ToNot(HaveOccurred())
 			config := &cb.Config{
 				ChannelGroup: channelGroup,
@@ -1786,7 +1729,7 @@ func TestCreateApplicationMSPCRL(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, err := baseApplicationChannelGroup(t)
+	channelGroup, privKeys, err := baseApplicationChannelGroup(t)
 	gt.Expect(err).ToNot(HaveOccurred())
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1796,13 +1739,15 @@ func TestCreateApplicationMSPCRL(t *testing.T) {
 
 	org1MSP, err := originalConfigTx.ApplicationMSP("Org1")
 	gt.Expect(err).NotTo(HaveOccurred())
-	org1RootCert, org1PrivKey, _ := certPrivKeyCRL(org1MSP)
+	org1RootCert := org1MSP.RootCerts[0]
+	org1PrivKey := privKeys[0]
 
 	// update org2MSP to include an intemediate cert that is different
 	// from the root cert
 	org2MSP, err := originalConfigTx.ApplicationMSP("Org2")
 	gt.Expect(err).NotTo(HaveOccurred())
-	org2Cert, org2PrivKey, _ := certPrivKeyCRL(org2MSP)
+	org2Cert := org2MSP.RootCerts[0]
+	org2PrivKey := privKeys[1]
 	org2IntermediateCert, org2IntermediatePrivKey := generateIntermediateCACertAndPrivateKey(t, "org2.example.com", org2Cert, org2PrivKey)
 	org2MSP.IntermediateCerts = append(org2MSP.IntermediateCerts, org2IntermediateCert)
 	err = originalConfigTx.SetApplicationMSP(org2MSP, "Org2")
@@ -1864,7 +1809,7 @@ func TestCreateApplicationMSPCRLFailure(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, err := baseApplicationChannelGroup(t)
+	channelGroup, privKeys, err := baseApplicationChannelGroup(t)
 	gt.Expect(err).ToNot(HaveOccurred())
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1874,12 +1819,14 @@ func TestCreateApplicationMSPCRLFailure(t *testing.T) {
 
 	org1MSP, err := c.ApplicationMSP("Org1")
 	gt.Expect(err).NotTo(HaveOccurred())
-	org1Cert, org1PrivKey, _ := certPrivKeyCRL(org1MSP)
+	org1Cert := org1MSP.RootCerts[0]
+	org1PrivKey := privKeys[0]
 	org1CertToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org1.example.com", org1Cert, org1PrivKey)
 
 	org2MSP, err := c.ApplicationMSP("Org2")
 	gt.Expect(err).NotTo(HaveOccurred())
-	org2Cert, org2PrivKey, _ := certPrivKeyCRL(org2MSP)
+	org2Cert := org2MSP.RootCerts[0]
+	org2PrivKey := privKeys[1]
 	org2CertToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org2.example.com", org2Cert, org2PrivKey)
 
 	signingIdentity := &SigningIdentity{
@@ -1977,7 +1924,7 @@ func TestParsePrivateKeyFromBytesFailure(t *testing.T) {
 	gt.Expect(err.Error()).To(ContainSubstring("no PEM data found in private key["))
 }
 
-func baseMSP(t *testing.T) MSP {
+func baseMSP(t *testing.T) (MSP, *ecdsa.PrivateKey) {
 	gt := NewGomegaWithT(t)
 
 	cert, privKey := generateCACertAndPrivateKey(t, "org1.example.com")
@@ -1993,13 +1940,6 @@ func baseMSP(t *testing.T) MSP {
 		IntermediateCerts: []*x509.Certificate{cert},
 		Admins:            []*x509.Certificate{cert},
 		RevocationList:    []*pkix.CertificateList{crl},
-		SigningIdentity: membership.SigningIdentityInfo{
-			PublicSigner: cert,
-			PrivateSigner: membership.KeyInfo{
-				KeyIdentifier: "SKI-1",
-				KeyMaterial:   privKey,
-			},
-		},
 		OrganizationalUnitIdentifiers: []membership.OUIdentifier{
 			{
 				Certificate:                  cert,
@@ -2030,33 +1970,24 @@ func baseMSP(t *testing.T) MSP {
 				OrganizationalUnitIdentifier: "OUID",
 			},
 		},
-	}
+	}, privKey
 }
 
-func certPrivKeyCRL(msp MSP) (*x509.Certificate, *ecdsa.PrivateKey, *pkix.CertificateList) {
-	cert := msp.RootCerts[0]
-	privKey := msp.SigningIdentity.PrivateSigner.KeyMaterial.(*ecdsa.PrivateKey)
-	crl := msp.RevocationList[0]
-
-	return cert, privKey, crl
-}
-
-// certPrivKeyCRLBase64 returns a base64 encoded representation of
+// certCRLBase64 returns a base64 encoded representation of
 // the first root certificate, the private key, and the first revocation list
 // for the specified MSP. These are intended for use when formatting the
 // expected config in JSON format.
-func certPrivKeyCRLBase64(t *testing.T, msp MSP) (string, string, string) {
+func certCRLBase64(t *testing.T, msp MSP) (string, string) {
 	gt := NewGomegaWithT(t)
 
-	cert, privKey, crl := certPrivKeyCRL(msp)
+	cert := msp.RootCerts[0]
+	crl := msp.RevocationList[0]
 
 	certBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(cert))
-	pkBytes, err := pemEncodePKCS8PrivateKey(privKey)
-	gt.Expect(err).NotTo(HaveOccurred())
-	pkBase64 := base64.StdEncoding.EncodeToString(pkBytes)
 	pemCRLBytes, err := buildPemEncodedRevocationList([]*pkix.CertificateList{crl})
 	gt.Expect(err).NotTo(HaveOccurred())
 	crlBase64 := base64.StdEncoding.EncodeToString(pemCRLBytes[0])
 
-	return certBase64, pkBase64, crlBase64
+	return certBase64, crlBase64
+
 }

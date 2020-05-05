@@ -53,7 +53,7 @@ func TestOrdererCapabilities(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseOrdererConf := baseSoloOrderer(t)
+	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -83,7 +83,7 @@ func TestApplicationCapabilities(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseApplicationConf := baseApplication(t)
+	baseApplicationConf, _ := baseApplication(t)
 	applicationGroup, err := newApplicationGroup(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -197,7 +197,7 @@ func TestAddOrdererCapability(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseOrdererConf := baseSoloOrderer(t)
+	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -212,7 +212,7 @@ func TestAddOrdererCapability(t *testing.T) {
 	c := New(config)
 
 	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
-	orgCertBase64, orgPKBase64, orgCRLBase64 := certPrivKeyCRLBase64(t, ordererOrgMSP)
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
 
 	expectedConfigGroupJSON := fmt.Sprintf(`{
 	"groups": {
@@ -321,13 +321,7 @@ func TestAddOrdererCapability(t *testing.T) {
 							"root_certs": [
 								"%[1]s"
 							],
-							"signing_identity": {
-								"private_signer": {
-									"key_identifier": "SKI-1",
-									"key_material": "%[3]s"
-								},
-								"public_signer": "%[1]s"
-							},
+							"signing_identity": null,
 							"tls_intermediate_certs": [
 								"%[1]s"
 							],
@@ -434,7 +428,7 @@ func TestAddOrdererCapability(t *testing.T) {
 	},
 	"version": "0"
 }
-`, orgCertBase64, orgCRLBase64, orgPKBase64)
+`, orgCertBase64, orgCRLBase64)
 
 	capability := "V3_0"
 	err = c.AddOrdererCapability(capability)
@@ -477,7 +471,7 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseOrdererConf := baseSoloOrderer(t)
+			baseOrdererConf, _ := baseSoloOrderer(t)
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
 			gt.Expect(err).NotTo(HaveOccurred())
 			tt.ordererGroup(ordererGroup)
@@ -682,7 +676,7 @@ func TestAddApplicationCapability(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			baseApp := baseApplication(t)
+			baseApp, _ := baseApplication(t)
 			appGroup, err := newApplicationGroup(baseApp)
 			gt.Expect(err).NotTo(HaveOccurred())
 
@@ -746,7 +740,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseApp := baseApplication(t)
+			baseApp, _ := baseApplication(t)
 			appGroup, err := newApplicationGroup(baseApp)
 			gt.Expect(err).NotTo(HaveOccurred())
 			tt.applicationGroup(appGroup)
@@ -873,7 +867,7 @@ func TestRemoveOrdererCapability(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseOrdererConf := baseSoloOrderer(t)
+	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -888,7 +882,7 @@ func TestRemoveOrdererCapability(t *testing.T) {
 	c := New(config)
 
 	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
-	orgCertBase64, orgPKBase64, orgCRLBase64 := certPrivKeyCRLBase64(t, ordererOrgMSP)
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
 
 	expectedConfigGroupJSON := fmt.Sprintf(`{
 	"groups": {
@@ -997,13 +991,7 @@ func TestRemoveOrdererCapability(t *testing.T) {
 							"root_certs": [
 								"%[1]s"
 							],
-							"signing_identity": {
-								"private_signer": {
-									"key_identifier": "SKI-1",
-									"key_material": "%[3]s"
-								},
-								"public_signer": "%[1]s"
-							},
+							"signing_identity": null,
 							"tls_intermediate_certs": [
 								"%[1]s"
 							],
@@ -1107,7 +1095,7 @@ func TestRemoveOrdererCapability(t *testing.T) {
 	},
 	"version": "0"
 }
-`, orgCertBase64, orgCRLBase64, orgPKBase64)
+`, orgCertBase64, orgCRLBase64)
 
 	capability := "V1_3"
 	err = c.RemoveOrdererCapability(capability)
@@ -1157,7 +1145,7 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseOrdererConf := baseSoloOrderer(t)
+			baseOrdererConf, _ := baseSoloOrderer(t)
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
 			gt.Expect(err).NotTo(HaveOccurred())
 			tt.ordererGroup(ordererGroup)
@@ -1183,7 +1171,7 @@ func TestRemoveApplicationCapability(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseApp := baseApplication(t)
+	baseApp, _ := baseApplication(t)
 	appGroup, err := newApplicationGroup(baseApp)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -1321,7 +1309,7 @@ func TestRemoveApplicationCapabilityFailures(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseApp := baseApplication(t)
+			baseApp, _ := baseApplication(t)
 			appGroup, err := newApplicationGroup(baseApp)
 			gt.Expect(err).NotTo(HaveOccurred())
 			tt.applicationGroup(appGroup)

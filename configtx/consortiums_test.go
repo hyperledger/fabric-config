@@ -8,6 +8,7 @@ package configtx
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"fmt"
 	"testing"
 
@@ -23,12 +24,12 @@ func TestNewConsortiumsGroup(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	consortiums := baseConsortiums(t)
+	consortiums, _ := baseConsortiums(t)
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	org1CertBase64, org1PKBase64, org1CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[0].MSP)
-	org2CertBase64, org2PKBase64, org2CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[1].MSP)
+	org1CertBase64, org1CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[0].MSP)
+	org2CertBase64, org2CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[1].MSP)
 
 	expectedConsortiumsGroup := fmt.Sprintf(`{
 	"groups": {
@@ -130,13 +131,7 @@ func TestNewConsortiumsGroup(t *testing.T) {
 									"root_certs": [
 										"%[1]s"
 									],
-									"signing_identity": {
-										"private_signer": {
-											"key_identifier": "SKI-1",
-											"key_material": "%[3]s"
-										},
-										"public_signer": "%[1]s"
-									},
+									"signing_identity": null,
 									"tls_intermediate_certs": [
 										"%[1]s"
 									],
@@ -206,7 +201,7 @@ func TestNewConsortiumsGroup(t *testing.T) {
 							"value": {
 								"config": {
 									"admins": [
-										"%[4]s"
+										"%[3]s"
 									],
 									"crypto_config": {
 										"identity_identifier_hash_function": "SHA256",
@@ -214,51 +209,45 @@ func TestNewConsortiumsGroup(t *testing.T) {
 									},
 									"fabric_node_ous": {
 										"admin_ou_identifier": {
-											"certificate": "%[4]s",
+											"certificate": "%[3]s",
 											"organizational_unit_identifier": "OUID"
 										},
 										"client_ou_identifier": {
-											"certificate": "%[4]s",
+											"certificate": "%[3]s",
 											"organizational_unit_identifier": "OUID"
 										},
 										"enable": false,
 										"orderer_ou_identifier": {
-											"certificate": "%[4]s",
+											"certificate": "%[3]s",
 											"organizational_unit_identifier": "OUID"
 										},
 										"peer_ou_identifier": {
-											"certificate": "%[4]s",
+											"certificate": "%[3]s",
 											"organizational_unit_identifier": "OUID"
 										}
 									},
 									"intermediate_certs": [
-										"%[4]s"
+										"%[3]s"
 									],
 									"name": "MSPID",
 									"organizational_unit_identifiers": [
 										{
-											"certificate": "%[4]s",
+											"certificate": "%[3]s",
 											"organizational_unit_identifier": "OUID"
 										}
 									],
 									"revocation_list": [
-										"%[5]s"
+										"%[4]s"
 									],
 									"root_certs": [
-										"%[4]s"
+										"%[3]s"
 									],
-									"signing_identity": {
-										"private_signer": {
-											"key_identifier": "SKI-1",
-											"key_material": "%[6]s"
-										},
-										"public_signer": "%[4]s"
-									},
+									"signing_identity": null,
 									"tls_intermediate_certs": [
-										"%[4]s"
+										"%[3]s"
 									],
 									"tls_root_certs": [
-										"%[4]s"
+										"%[3]s"
 									]
 								},
 								"type": 0
@@ -310,7 +299,7 @@ func TestNewConsortiumsGroup(t *testing.T) {
 	"values": {},
 	"version": "0"
 }
-`, org1CertBase64, org1CRLBase64, org1PKBase64, org2CertBase64, org2CRLBase64, org2PKBase64)
+`, org1CertBase64, org1CRLBase64, org2CertBase64, org2CRLBase64)
 
 	buf := bytes.Buffer{}
 	err = protolator.DeepMarshalJSON(&buf, &commonext.DynamicConsortiumsGroup{ConfigGroup: consortiumsGroup})
@@ -324,7 +313,7 @@ func TestNewConsortiumsGroupFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	consortiums := baseConsortiums(t)
+	consortiums, _ := baseConsortiums(t)
 	consortiums[0].Organizations[0].Policies = nil
 
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
@@ -337,9 +326,9 @@ func TestSetConsortiumOrg(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	consortiums := baseConsortiums(t)
-	org1CertBase64, org1PKBase64, org1CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[0].MSP)
-	org2CertBase64, org2PKBase64, org2CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[1].MSP)
+	consortiums, _ := baseConsortiums(t)
+	org1CertBase64, org1CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[0].MSP)
+	org2CertBase64, org2CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[1].MSP)
 
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -356,12 +345,13 @@ func TestSetConsortiumOrg(t *testing.T) {
 
 	c := New(config)
 
+	msp, _ := baseMSP(t)
 	orgToAdd := Organization{
 		Name:     "Org3",
 		Policies: orgStandardPolicies(),
-		MSP:      baseMSP(t),
+		MSP:      msp,
 	}
-	org3CertBase64, org3PKBase64, org3CRLBase64 := certPrivKeyCRLBase64(t, orgToAdd.MSP)
+	org3CertBase64, org3CRLBase64 := certCRLBase64(t, orgToAdd.MSP)
 
 	expectedConfigJSON := fmt.Sprintf(`
 {
@@ -467,13 +457,7 @@ func TestSetConsortiumOrg(t *testing.T) {
 												"root_certs": [
 													"%[1]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[3]s"
-													},
-													"public_signer": "%[1]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
 													"%[1]s"
 												],
@@ -543,7 +527,7 @@ func TestSetConsortiumOrg(t *testing.T) {
 										"value": {
 											"config": {
 												"admins": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"crypto_config": {
 													"identity_identifier_hash_function": "SHA256",
@@ -551,51 +535,45 @@ func TestSetConsortiumOrg(t *testing.T) {
 												},
 												"fabric_node_ous": {
 													"admin_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"client_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"enable": false,
 													"orderer_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"peer_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												},
 												"intermediate_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"name": "MSPID",
 												"organizational_unit_identifiers": [
 													{
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												],
 												"revocation_list": [
-													"%[5]s"
+													"%[4]s"
 												],
 												"root_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[6]s"
-													},
-													"public_signer": "%[4]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"tls_root_certs": [
-													"%[4]s"
+													"%[3]s"
 												]
 											},
 											"type": 0
@@ -660,7 +638,7 @@ func TestSetConsortiumOrg(t *testing.T) {
 										"value": {
 											"config": {
 												"admins": [
-													"%[7]s"
+													"%[5]s"
 												],
 												"crypto_config": {
 													"identity_identifier_hash_function": "SHA256",
@@ -668,51 +646,45 @@ func TestSetConsortiumOrg(t *testing.T) {
 												},
 												"fabric_node_ous": {
 													"admin_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[5]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"client_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[5]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"enable": false,
 													"orderer_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[5]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"peer_ou_identifier": {
-														"certificate": "%[7]s",
+														"certificate": "%[5]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												},
 												"intermediate_certs": [
-													"%[7]s"
+													"%[5]s"
 												],
 												"name": "MSPID",
 												"organizational_unit_identifiers": [
 													{
-														"certificate": "%[7]s",
+														"certificate": "%[5]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												],
 												"revocation_list": [
-													"%[8]s"
+													"%[6]s"
 												],
 												"root_certs": [
-													"%[7]s"
+													"%[5]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[9]s"
-													},
-													"public_signer": "%[7]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
-													"%[7]s"
+													"%[5]s"
 												],
 												"tls_root_certs": [
-													"%[7]s"
+													"%[5]s"
 												]
 											},
 											"type": 0
@@ -772,7 +744,7 @@ func TestSetConsortiumOrg(t *testing.T) {
 	},
 	"sequence": "0"
 }
-`, org1CertBase64, org1CRLBase64, org1PKBase64, org2CertBase64, org2CRLBase64, org2PKBase64, org3CertBase64, org3CRLBase64, org3PKBase64)
+`, org1CertBase64, org1CRLBase64, org2CertBase64, org2CRLBase64, org3CertBase64, org3CRLBase64)
 
 	expectedConfigProto := &cb.Config{}
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedConfigJSON), expectedConfigProto)
@@ -811,7 +783,7 @@ func TestSetConsortiumOrgFailures(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			consortiums := baseConsortiums(t)
+			consortiums, _ := baseConsortiums(t)
 
 			consortiumsGroup, err := newConsortiumsGroup(consortiums)
 			gt.Expect(err).NotTo(HaveOccurred())
@@ -837,7 +809,7 @@ func TestRemoveConsortium(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	consortiums := baseConsortiums(t)
+	consortiums, _ := baseConsortiums(t)
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -863,8 +835,8 @@ func TestGetConsortiums(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	baseConsortiums := baseConsortiums(t)
-	baseOrderer := baseSoloOrderer(t)
+	baseConsortiums, _ := baseConsortiums(t)
+	baseOrderer, _ := baseSoloOrderer(t)
 	policies := standardPolicies()
 
 	channel := Channel{
@@ -889,7 +861,7 @@ func TestGetConsortiumOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	consortiumGroup, err := baseConsortiumChannelGroup(t)
+	consortiumGroup, _, err := baseConsortiumChannelGroup(t)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -905,7 +877,7 @@ func TestSetConsortium(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	consortiums := baseConsortiums(t)
+	consortiums, _ := baseConsortiums(t)
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -925,8 +897,8 @@ func TestSetConsortium(t *testing.T) {
 	err = c.SetConsortium(newConsortium)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	org1CertBase64, org1PKBase64, org1CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[0].MSP)
-	org2CertBase64, org2PKBase64, org2CRLBase64 := certPrivKeyCRLBase64(t, consortiums[0].Organizations[1].MSP)
+	org1CertBase64, org1CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[0].MSP)
+	org2CertBase64, org2CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[1].MSP)
 
 	expectedConfigJSON := fmt.Sprintf(`
 {
@@ -1032,13 +1004,7 @@ func TestSetConsortium(t *testing.T) {
 												"root_certs": [
 													"%[1]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[3]s"
-													},
-													"public_signer": "%[1]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
 													"%[1]s"
 												],
@@ -1108,7 +1074,7 @@ func TestSetConsortium(t *testing.T) {
 										"value": {
 											"config": {
 												"admins": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"crypto_config": {
 													"identity_identifier_hash_function": "SHA256",
@@ -1116,51 +1082,45 @@ func TestSetConsortium(t *testing.T) {
 												},
 												"fabric_node_ous": {
 													"admin_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"client_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"enable": false,
 													"orderer_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"peer_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												},
 												"intermediate_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"name": "MSPID",
 												"organizational_unit_identifiers": [
 													{
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												],
 												"revocation_list": [
-													"%[5]s"
+													"%[4]s"
 												],
 												"root_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[6]s"
-													},
-													"public_signer": "%[4]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"tls_root_certs": [
-													"%[4]s"
+													"%[3]s"
 												]
 											},
 											"type": 0
@@ -1286,13 +1246,7 @@ func TestSetConsortium(t *testing.T) {
 												"root_certs": [
 													"%[1]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[3]s"
-													},
-													"public_signer": "%[1]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
 													"%[1]s"
 												],
@@ -1362,7 +1316,7 @@ func TestSetConsortium(t *testing.T) {
 										"value": {
 											"config": {
 												"admins": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"crypto_config": {
 													"identity_identifier_hash_function": "SHA256",
@@ -1370,51 +1324,45 @@ func TestSetConsortium(t *testing.T) {
 												},
 												"fabric_node_ous": {
 													"admin_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"client_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"enable": false,
 													"orderer_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													},
 													"peer_ou_identifier": {
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												},
 												"intermediate_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"name": "MSPID",
 												"organizational_unit_identifiers": [
 													{
-														"certificate": "%[4]s",
+														"certificate": "%[3]s",
 														"organizational_unit_identifier": "OUID"
 													}
 												],
 												"revocation_list": [
-													"%[5]s"
+													"%[4]s"
 												],
 												"root_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
-												"signing_identity": {
-													"private_signer": {
-														"key_identifier": "SKI-1",
-														"key_material": "%[6]s"
-													},
-													"public_signer": "%[4]s"
-												},
+												"signing_identity": null,
 												"tls_intermediate_certs": [
-													"%[4]s"
+													"%[3]s"
 												],
 												"tls_root_certs": [
-													"%[4]s"
+													"%[3]s"
 												]
 											},
 											"type": 0
@@ -1462,7 +1410,7 @@ func TestSetConsortium(t *testing.T) {
 	},
 	"sequence": "0"
 }
-`, org1CertBase64, org1CRLBase64, org1PKBase64, org2CertBase64, org2CRLBase64, org2PKBase64)
+`, org1CertBase64, org1CRLBase64, org2CertBase64, org2CRLBase64)
 
 	expectedConfigProto := &cb.Config{}
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedConfigJSON), expectedConfigProto)
@@ -1476,7 +1424,7 @@ func TestSetConsortiumFailures(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	consortiums := baseConsortiums(t)
+	consortiums, _ := baseConsortiums(t)
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -1497,7 +1445,10 @@ func TestSetConsortiumFailures(t *testing.T) {
 	gt.Expect(err).To(MatchError("consortium is required"))
 }
 
-func baseConsortiums(t *testing.T) []Consortium {
+func baseConsortiums(t *testing.T) ([]Consortium, []*ecdsa.PrivateKey) {
+	org1MSP, org1PrivKey := baseMSP(t)
+	org2MSP, org2PrivKey := baseMSP(t)
+
 	return []Consortium{
 		{
 			Name: "Consortium1",
@@ -1505,28 +1456,28 @@ func baseConsortiums(t *testing.T) []Consortium {
 				{
 					Name:     "Org1",
 					Policies: orgStandardPolicies(),
-					MSP:      baseMSP(t),
+					MSP:      org1MSP,
 				},
 				{
 					Name:     "Org2",
 					Policies: orgStandardPolicies(),
-					MSP:      baseMSP(t),
+					MSP:      org2MSP,
 				},
 			},
 		},
-	}
+	}, []*ecdsa.PrivateKey{org1PrivKey, org2PrivKey}
 }
 
-func baseConsortiumChannelGroup(t *testing.T) (*cb.ConfigGroup, error) {
+func baseConsortiumChannelGroup(t *testing.T) (*cb.ConfigGroup, []*ecdsa.PrivateKey, error) {
 	channelGroup := newConfigGroup()
 
-	consortiums := baseConsortiums(t)
+	consortiums, privKeys := baseConsortiums(t)
 	consortiumsGroup, err := newConsortiumsGroup(consortiums)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	channelGroup.Groups[ConsortiumsGroupKey] = consortiumsGroup
 
-	return channelGroup, nil
+	return channelGroup, privKeys, nil
 }
