@@ -1026,7 +1026,7 @@ func baseMSP(t *testing.T) configtx.MSP {
 		},
 		TLSRootCerts:         []*x509.Certificate{cert},
 		TLSIntermediateCerts: []*x509.Certificate{cert},
-		NodeOus: membership.NodeOUs{
+		NodeOUs: membership.NodeOUs{
 			ClientOUIdentifier: membership.OUIdentifier{
 				Certificate:                  cert,
 				OrganizationalUnitIdentifier: "OUID",

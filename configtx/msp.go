@@ -73,7 +73,7 @@ type MSP struct {
 	TLSIntermediateCerts []*x509.Certificate
 	// Contains the configuration to distinguish clients
 	// from peers from orderers based on the OUs.
-	NodeOus membership.NodeOUs
+	NodeOUs membership.NodeOUs
 }
 
 // ApplicationMSP returns the MSP configuration for an existing application
@@ -294,44 +294,47 @@ func getMSPConfig(configGroup *cb.ConfigGroup) (MSP, error) {
 	}
 
 	// NODE OUS
-	clientOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.ClientOuIdentifier.Certificate)
-	if err != nil {
-		return MSP{}, fmt.Errorf("parsing client ou identifier cert: %v", err)
-	}
+	nodeOUs := membership.NodeOUs{}
+	if fabricMSPConfig.FabricNodeOus != nil {
+		clientOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.ClientOuIdentifier.Certificate)
+		if err != nil {
+			return MSP{}, fmt.Errorf("parsing client ou identifier cert: %v", err)
+		}
 
-	peerOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.PeerOuIdentifier.Certificate)
-	if err != nil {
-		return MSP{}, fmt.Errorf("parsing peer ou identifier cert: %v", err)
-	}
+		peerOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.PeerOuIdentifier.Certificate)
+		if err != nil {
+			return MSP{}, fmt.Errorf("parsing peer ou identifier cert: %v", err)
+		}
 
-	adminOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.AdminOuIdentifier.Certificate)
-	if err != nil {
-		return MSP{}, fmt.Errorf("parsing admin ou identifier cert: %v", err)
-	}
+		adminOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.AdminOuIdentifier.Certificate)
+		if err != nil {
+			return MSP{}, fmt.Errorf("parsing admin ou identifier cert: %v", err)
+		}
 
-	ordererOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.OrdererOuIdentifier.Certificate)
-	if err != nil {
-		return MSP{}, fmt.Errorf("parsing orderer ou identifier cert: %v", err)
-	}
+		ordererOUIdentifierCert, err := parseCertificateFromBytes(fabricMSPConfig.FabricNodeOus.OrdererOuIdentifier.Certificate)
+		if err != nil {
+			return MSP{}, fmt.Errorf("parsing orderer ou identifier cert: %v", err)
+		}
 
-	nodeOUs := membership.NodeOUs{
-		Enable: fabricMSPConfig.FabricNodeOus.Enable,
-		ClientOUIdentifier: membership.OUIdentifier{
-			Certificate:                  clientOUIdentifierCert,
-			OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.ClientOuIdentifier.OrganizationalUnitIdentifier,
-		},
-		PeerOUIdentifier: membership.OUIdentifier{
-			Certificate:                  peerOUIdentifierCert,
-			OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.PeerOuIdentifier.OrganizationalUnitIdentifier,
-		},
-		AdminOUIdentifier: membership.OUIdentifier{
-			Certificate:                  adminOUIdentifierCert,
-			OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.AdminOuIdentifier.OrganizationalUnitIdentifier,
-		},
-		OrdererOUIdentifier: membership.OUIdentifier{
-			Certificate:                  ordererOUIdentifierCert,
-			OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.OrdererOuIdentifier.OrganizationalUnitIdentifier,
-		},
+		nodeOUs = membership.NodeOUs{
+			Enable: fabricMSPConfig.FabricNodeOus.Enable,
+			ClientOUIdentifier: membership.OUIdentifier{
+				Certificate:                  clientOUIdentifierCert,
+				OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.ClientOuIdentifier.OrganizationalUnitIdentifier,
+			},
+			PeerOUIdentifier: membership.OUIdentifier{
+				Certificate:                  peerOUIdentifierCert,
+				OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.PeerOuIdentifier.OrganizationalUnitIdentifier,
+			},
+			AdminOUIdentifier: membership.OUIdentifier{
+				Certificate:                  adminOUIdentifierCert,
+				OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.AdminOuIdentifier.OrganizationalUnitIdentifier,
+			},
+			OrdererOUIdentifier: membership.OUIdentifier{
+				Certificate:                  ordererOUIdentifierCert,
+				OrganizationalUnitIdentifier: fabricMSPConfig.FabricNodeOus.OrdererOuIdentifier.OrganizationalUnitIdentifier,
+			},
+		}
 	}
 
 	return MSP{
@@ -348,7 +351,7 @@ func getMSPConfig(configGroup *cb.ConfigGroup) (MSP, error) {
 		},
 		TLSRootCerts:         tlsRootCerts,
 		TLSIntermediateCerts: tlsIntermediateCerts,
-		NodeOus:              nodeOUs,
+		NodeOUs:              nodeOUs,
 	}, nil
 }
 
@@ -468,24 +471,27 @@ func (m *MSP) toProto() (*mb.FabricMSPConfig, error) {
 
 	ouIdentifiers := buildOUIdentifiers(m.OrganizationalUnitIdentifiers)
 
-	fabricNodeOUs := &mb.FabricNodeOUs{
-		Enable: m.NodeOus.Enable,
-		ClientOuIdentifier: &mb.FabricOUIdentifier{
-			Certificate:                  pemEncodeX509Certificate(m.NodeOus.ClientOUIdentifier.Certificate),
-			OrganizationalUnitIdentifier: m.NodeOus.ClientOUIdentifier.OrganizationalUnitIdentifier,
-		},
-		PeerOuIdentifier: &mb.FabricOUIdentifier{
-			Certificate:                  pemEncodeX509Certificate(m.NodeOus.PeerOUIdentifier.Certificate),
-			OrganizationalUnitIdentifier: m.NodeOus.PeerOUIdentifier.OrganizationalUnitIdentifier,
-		},
-		AdminOuIdentifier: &mb.FabricOUIdentifier{
-			Certificate:                  pemEncodeX509Certificate(m.NodeOus.AdminOUIdentifier.Certificate),
-			OrganizationalUnitIdentifier: m.NodeOus.AdminOUIdentifier.OrganizationalUnitIdentifier,
-		},
-		OrdererOuIdentifier: &mb.FabricOUIdentifier{
-			Certificate:                  pemEncodeX509Certificate(m.NodeOus.OrdererOUIdentifier.Certificate),
-			OrganizationalUnitIdentifier: m.NodeOus.OrdererOUIdentifier.OrganizationalUnitIdentifier,
-		},
+	fabricNodeOUs := &mb.FabricNodeOUs{}
+	if m.NodeOUs != (membership.NodeOUs{}) {
+		fabricNodeOUs = &mb.FabricNodeOUs{
+			Enable: m.NodeOUs.Enable,
+			ClientOuIdentifier: &mb.FabricOUIdentifier{
+				Certificate:                  pemEncodeX509Certificate(m.NodeOUs.ClientOUIdentifier.Certificate),
+				OrganizationalUnitIdentifier: m.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier,
+			},
+			PeerOuIdentifier: &mb.FabricOUIdentifier{
+				Certificate:                  pemEncodeX509Certificate(m.NodeOUs.PeerOUIdentifier.Certificate),
+				OrganizationalUnitIdentifier: m.NodeOUs.PeerOUIdentifier.OrganizationalUnitIdentifier,
+			},
+			AdminOuIdentifier: &mb.FabricOUIdentifier{
+				Certificate:                  pemEncodeX509Certificate(m.NodeOUs.AdminOUIdentifier.Certificate),
+				OrganizationalUnitIdentifier: m.NodeOUs.AdminOUIdentifier.OrganizationalUnitIdentifier,
+			},
+			OrdererOuIdentifier: &mb.FabricOUIdentifier{
+				Certificate:                  pemEncodeX509Certificate(m.NodeOUs.OrdererOUIdentifier.Certificate),
+				OrganizationalUnitIdentifier: m.NodeOUs.OrdererOUIdentifier.OrganizationalUnitIdentifier,
+			},
+		}
 	}
 
 	return &mb.FabricMSPConfig{
