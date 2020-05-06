@@ -942,6 +942,20 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 									}
 								},
 								"values": {
+									"BlockDataHashingStructure": {
+										"mod_policy": "Admins",
+										"value": {
+											 "width": 4294967295
+											},
+										"version": "0"
+									},
+									"HashingAlgorithm": {
+										"mod_policy": "Admins",
+										"value": {
+											 "name": "SHA256"
+											},
+										"version": "0"
+									},
 									"Capabilities": {
 										"mod_policy": "Admins",
 										"value": {
@@ -1032,7 +1046,6 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 	actualData := &cb.ConfigEnvelope{}
 	err = proto.Unmarshal(actualPayload.Data, actualData)
 	gt.Expect(err).NotTo(HaveOccurred())
-
 	gt.Expect(actualData).To(Equal(expectedData))
 
 	expectedChannelHeader := &cb.ChannelHeader{}

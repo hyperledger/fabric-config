@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -18,6 +19,11 @@ import (
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	ob "github.com/hyperledger/fabric-protos-go/orderer"
 	eb "github.com/hyperledger/fabric-protos-go/orderer/etcdraft"
+)
+
+const (
+	defaultHashingAlgorithm               = "SHA256"
+	defaultBlockDataHashingStructureWidth = math.MaxUint32
 )
 
 // Orderer configures the ordering service behavior for a channel.
@@ -572,4 +578,26 @@ func getOrdererAddresses(config *cb.Config) ([]Address, error) {
 // provided config. It returns nil if the org doesn't exist in the config.
 func getOrdererOrg(config *cb.Config, orgName string) *cb.ConfigGroup {
 	return config.ChannelGroup.Groups[OrdererGroupKey].Groups[orgName]
+}
+
+// hashingAlgorithm returns the only currently valid hashing algorithm.
+// It is a value for the /Channel group.
+func hashingAlgorithmValue() *standardConfigValue {
+	return &standardConfigValue{
+		key: HashingAlgorithmKey,
+		value: &cb.HashingAlgorithm{
+			Name: defaultHashingAlgorithm,
+		},
+	}
+}
+
+// blockDataHashingStructureValue returns the only currently valid block data hashing structure.
+// It is a value for the /Channel group.
+func blockDataHashingStructureValue() *standardConfigValue {
+	return &standardConfigValue{
+		key: BlockDataHashingStructureKey,
+		value: &cb.BlockDataHashingStructure{
+			Width: defaultBlockDataHashingStructureWidth,
+		},
+	}
 }
