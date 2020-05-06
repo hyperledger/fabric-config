@@ -236,7 +236,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			orgType: OrdererGroupKey,
 			orgName: "OrdererOrg",
 			mspMod: func(msp *MSP) {
-				msp.NodeOus.ClientOUIdentifier.Certificate = badCert
+				msp.NodeOUs.ClientOUIdentifier.Certificate = badCert
 			},
 			expectedErr: "parsing client ou identifier cert: asn1: syntax error: sequence truncated",
 		},
@@ -245,7 +245,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			orgType: OrdererGroupKey,
 			orgName: "OrdererOrg",
 			mspMod: func(msp *MSP) {
-				msp.NodeOus.PeerOUIdentifier.Certificate = badCert
+				msp.NodeOUs.PeerOUIdentifier.Certificate = badCert
 			},
 			expectedErr: "parsing peer ou identifier cert: asn1: syntax error: sequence truncated",
 		},
@@ -254,7 +254,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			orgType: OrdererGroupKey,
 			orgName: "OrdererOrg",
 			mspMod: func(msp *MSP) {
-				msp.NodeOus.AdminOUIdentifier.Certificate = badCert
+				msp.NodeOUs.AdminOUIdentifier.Certificate = badCert
 			},
 			expectedErr: "parsing admin ou identifier cert: asn1: syntax error: sequence truncated",
 		},
@@ -263,7 +263,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			orgType: OrdererGroupKey,
 			orgName: "OrdererOrg",
 			mspMod: func(msp *MSP) {
-				msp.NodeOus.OrdererOUIdentifier.Certificate = badCert
+				msp.NodeOUs.OrdererOUIdentifier.Certificate = badCert
 			},
 			expectedErr: "parsing orderer ou identifier cert: asn1: syntax error: sequence truncated",
 		},
@@ -412,6 +412,64 @@ func TestMSPToProto(t *testing.T) {
 	gt.Expect(fabricMSPConfigProto).To(Equal(expectedFabricMSPConfigProto))
 }
 
+func TestMSPToProtoNoNodeOUs(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	msp := baseMSP(t)
+	msp.NodeOUs = membership.NodeOUs{}
+	certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, msp)
+
+	expectedFabricMSPConfigProtoJSON := fmt.Sprintf(`
+{
+	"admins": [
+		"%[1]s"
+	],
+	"crypto_config": {
+		"identity_identifier_hash_function": "SHA256",
+		"signature_hash_family": "SHA3"
+	},
+	"fabric_node_ous": {},
+	"intermediate_certs": [
+		"%[1]s"
+	],
+	"name": "MSPID",
+	"organizational_unit_identifiers": [
+		{
+			"certificate": "%[1]s",
+			"organizational_unit_identifier": "OUID"
+		}
+	],
+	"revocation_list": [
+		"%[2]s"
+	],
+	"root_certs": [
+		"%[1]s"
+	],
+	"signing_identity": {
+		"private_signer": {
+			"key_identifier": "SKI-1",
+			"key_material": "%[3]s"
+		},
+		"public_signer": "%[1]s"
+	},
+	"tls_intermediate_certs": [
+		"%[1]s"
+	],
+	"tls_root_certs": [
+		"%[1]s"
+	]
+}
+`, certBase64, crlBase64, pkBase64)
+	expectedFabricMSPConfigProto := &mb.FabricMSPConfig{}
+	err := protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedFabricMSPConfigProtoJSON), expectedFabricMSPConfigProto)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	fabricMSPConfigProto, err := msp.toProto()
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(fabricMSPConfigProto).To(Equal(expectedFabricMSPConfigProto))
+}
 func TestMSPToProtoFailure(t *testing.T) {
 	t.Parallel()
 
@@ -1954,7 +2012,7 @@ func baseMSP(t *testing.T) MSP {
 		},
 		TLSRootCerts:         []*x509.Certificate{cert},
 		TLSIntermediateCerts: []*x509.Certificate{cert},
-		NodeOus: membership.NodeOUs{
+		NodeOUs: membership.NodeOUs{
 			ClientOUIdentifier: membership.OUIdentifier{
 				Certificate:                  cert,
 				OrganizationalUnitIdentifier: "OUID",
