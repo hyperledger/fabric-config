@@ -8,6 +8,7 @@ package configtx
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
@@ -33,7 +34,7 @@ func TestNewOrdererGroup(t *testing.T) {
 			ordererType:           orderer.ConsensusTypeSolo,
 			numOrdererGroupValues: 5,
 			expectedConfigJSONGen: func(o Orderer) string {
-				certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, o.Organizations[0].MSP)
+				certBase64, crlBase64 := certCRLBase64(t, o.Organizations[0].MSP)
 				return fmt.Sprintf(`{
 	"groups": {
 		"OrdererOrg": {
@@ -141,13 +142,7 @@ func TestNewOrdererGroup(t *testing.T) {
 							"root_certs": [
 								"%[1]s"
 							],
-							"signing_identity": {
-								"private_signer": {
-									"key_identifier": "SKI-1",
-									"key_material": "%[3]s"
-								},
-								"public_signer": "%[1]s"
-							},
+							"signing_identity": null,
 							"tls_intermediate_certs": [
 								"%[1]s"
 							],
@@ -255,14 +250,14 @@ func TestNewOrdererGroup(t *testing.T) {
 	},
 	"version": "0"
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 			},
 		},
 		{
 			ordererType:           orderer.ConsensusTypeEtcdRaft,
 			numOrdererGroupValues: 5,
 			expectedConfigJSONGen: func(o Orderer) string {
-				certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, o.Organizations[0].MSP)
+				certBase64, crlBase64 := certCRLBase64(t, o.Organizations[0].MSP)
 				etcdRaftCert := o.EtcdRaft.Consenters[0].ClientTLSCert
 				etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
 				return fmt.Sprintf(`{
@@ -372,13 +367,7 @@ func TestNewOrdererGroup(t *testing.T) {
 							"root_certs": [
 								"%[1]s"
 							],
-							"signing_identity": {
-								"private_signer": {
-									"key_identifier": "SKI-1",
-									"key_material": "%[3]s"
-								},
-								"public_signer": "%[1]s"
-							},
+							"signing_identity": null,
 							"tls_intermediate_certs": [
 								"%[1]s"
 							],
@@ -480,22 +469,22 @@ func TestNewOrdererGroup(t *testing.T) {
 				"metadata": {
 					"consenters": [
 						{
-							"client_tls_cert": "%[4]s",
+							"client_tls_cert": "%[3]s",
 							"host": "node-1.example.com",
 							"port": 7050,
-							"server_tls_cert": "%[4]s"
+							"server_tls_cert": "%[3]s"
 						},
 						{
-							"client_tls_cert": "%[4]s",
+							"client_tls_cert": "%[3]s",
 							"host": "node-2.example.com",
 							"port": 7050,
-							"server_tls_cert": "%[4]s"
+							"server_tls_cert": "%[3]s"
 						},
 						{
-							"client_tls_cert": "%[4]s",
+							"client_tls_cert": "%[3]s",
 							"host": "node-3.example.com",
 							"port": 7050,
-							"server_tls_cert": "%[4]s"
+							"server_tls_cert": "%[3]s"
 						}
 					],
 					"options": {
@@ -514,14 +503,14 @@ func TestNewOrdererGroup(t *testing.T) {
 	},
 	"version": "0"
 }
-`, certBase64, crlBase64, pkBase64, etcdRaftCertBase64)
+`, certBase64, crlBase64, etcdRaftCertBase64)
 			},
 		},
 		{
 			ordererType:           orderer.ConsensusTypeKafka,
 			numOrdererGroupValues: 6,
 			expectedConfigJSONGen: func(o Orderer) string {
-				certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, o.Organizations[0].MSP)
+				certBase64, crlBase64 := certCRLBase64(t, o.Organizations[0].MSP)
 				return fmt.Sprintf(`{
 	"groups": {
 		"OrdererOrg": {
@@ -629,13 +618,7 @@ func TestNewOrdererGroup(t *testing.T) {
 							"root_certs": [
 								"%[1]s"
 							],
-							"signing_identity": {
-								"private_signer": {
-									"key_identifier": "SKI-1",
-									"key_material": "%[3]s"
-								},
-								"public_signer": "%[1]s"
-							},
+							"signing_identity": null,
 							"tls_intermediate_certs": [
 								"%[1]s"
 							],
@@ -753,7 +736,7 @@ func TestNewOrdererGroup(t *testing.T) {
 	},
 	"version": "0"
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 			},
 		},
 	}
@@ -765,7 +748,7 @@ func TestNewOrdererGroup(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			ordererConf := baseOrdererOfType(t, tt.ordererType)
+			ordererConf, _ := baseOrdererOfType(t, tt.ordererType)
 
 			ordererGroup, err := newOrdererGroup(ordererConf)
 			gt.Expect(err).NotTo(HaveOccurred())
@@ -878,7 +861,7 @@ func TestNewOrdererGroupFailure(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			ordererConf := baseSoloOrderer(t)
+			ordererConf, _ := baseSoloOrderer(t)
 			tt.ordererMod(&ordererConf)
 
 			ordererGroup, err := newOrdererGroup(ordererConf)
@@ -893,8 +876,8 @@ func TestSetOrdererConfiguration(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseOrdererConf := baseSoloOrderer(t)
-	certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, baseOrdererConf.Organizations[0].MSP)
+	baseOrdererConf, _ := baseSoloOrderer(t)
+	certBase64, crlBase64 := certCRLBase64(t, baseOrdererConf.Organizations[0].MSP)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -1073,13 +1056,7 @@ func TestSetOrdererConfiguration(t *testing.T) {
 										"root_certs": [
 											"%[1]s"
 										],
-										"signing_identity": {
-											"private_signer": {
-												"key_identifier": "SKI-1",
-												"key_material": "%[3]s"
-											},
-											"public_signer": "%[1]s"
-										},
+										"signing_identity": null,
 										"tls_intermediate_certs": [
 											"%[1]s"
 										],
@@ -1233,7 +1210,7 @@ func TestSetOrdererConfiguration(t *testing.T) {
 	},
 	"sequence": "0"
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 
 	buf := &bytes.Buffer{}
 	err = protolator.DeepMarshalJSON(buf, c.UpdatedConfig())
@@ -1266,7 +1243,7 @@ func TestOrdererConfiguration(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseOrdererConf := baseOrdererOfType(t, tt.ordererType)
+			baseOrdererConf, _ := baseOrdererOfType(t, tt.ordererType)
 
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
 			gt.Expect(err).NotTo(HaveOccurred())
@@ -1369,7 +1346,7 @@ func TestOrdererConfigurationFailure(t *testing.T) {
 
 			gt := NewGomegaWithT(t)
 
-			baseOrdererConfig := baseOrdererOfType(t, tt.ordererType)
+			baseOrdererConfig, _ := baseOrdererOfType(t, tt.ordererType)
 			ordererGroup, err := newOrdererGroup(baseOrdererConfig)
 			gt.Expect(err).NotTo(HaveOccurred())
 
@@ -1402,7 +1379,8 @@ func TestAddOrdererOrg(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	ordererGroup, err := newOrdererGroup(baseSoloOrderer(t))
+	orderer, _ := baseSoloOrderer(t)
+	ordererGroup, err := newOrdererGroup(orderer)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1415,15 +1393,16 @@ func TestAddOrdererOrg(t *testing.T) {
 
 	c := New(config)
 
+	msp, _ := baseMSP(t)
 	org := Organization{
 		Name:     "OrdererOrg2",
 		Policies: orgStandardPolicies(),
 		OrdererEndpoints: []string{
 			"localhost:123",
 		},
-		MSP: baseMSP(t),
+		MSP: msp,
 	}
-	certBase64, pkBase64, crlBase64 := certPrivKeyCRLBase64(t, org.MSP)
+	certBase64, crlBase64 := certCRLBase64(t, org.MSP)
 
 	expectedConfigJSON := fmt.Sprintf(`
 {
@@ -1531,13 +1510,7 @@ func TestAddOrdererOrg(t *testing.T) {
 					"root_certs": [
 						"%[1]s"
 					],
-					"signing_identity": {
-						"private_signer": {
-							"key_identifier": "SKI-1",
-							"key_material": "%[3]s"
-						},
-						"public_signer": "%[1]s"
-					},
+					"signing_identity": null,
 					"tls_intermediate_certs": [
 						"%[1]s"
 					],
@@ -1552,7 +1525,7 @@ func TestAddOrdererOrg(t *testing.T) {
 	},
 	"version": "0"
 }
-`, certBase64, crlBase64, pkBase64)
+`, certBase64, crlBase64)
 
 	err = c.SetOrdererOrg(org)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -1569,7 +1542,8 @@ func TestSetOrdererOrgFailures(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	ordererGroup, err := newOrdererGroup(baseSoloOrderer(t))
+	orderer, _ := baseSoloOrderer(t)
+	ordererGroup, err := newOrdererGroup(orderer)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1804,7 +1778,7 @@ func TestGetOrdererOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	ordererChannelGroup, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
+	ordererChannelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1815,7 +1789,7 @@ func TestGetOrdererOrg(t *testing.T) {
 	gt.Expect(ordererOrgGroup).To(Equal(config.ChannelGroup.Groups[OrdererGroupKey].Groups["OrdererOrg"]))
 }
 
-func baseOrdererOfType(t *testing.T, ordererType string) Orderer {
+func baseOrdererOfType(t *testing.T, ordererType string) (Orderer, []*ecdsa.PrivateKey) {
 	switch ordererType {
 	case orderer.ConsensusTypeKafka:
 		return baseKafkaOrderer(t)
@@ -1826,7 +1800,8 @@ func baseOrdererOfType(t *testing.T, ordererType string) Orderer {
 	}
 }
 
-func baseSoloOrderer(t *testing.T) Orderer {
+func baseSoloOrderer(t *testing.T) (Orderer, []*ecdsa.PrivateKey) {
+	baseMSP, privKey := baseMSP(t)
 	return Orderer{
 		Policies:    ordererStandardPolicies(),
 		OrdererType: orderer.ConsensusTypeSolo,
@@ -1837,7 +1812,7 @@ func baseSoloOrderer(t *testing.T) Orderer {
 				OrdererEndpoints: []string{
 					"localhost:123",
 				},
-				MSP: baseMSP(t),
+				MSP: baseMSP,
 			},
 		},
 		Capabilities: []string{"V1_3"},
@@ -1853,24 +1828,24 @@ func baseSoloOrderer(t *testing.T) Orderer {
 			},
 		},
 		State: orderer.ConsensusStateNormal,
-	}
+	}, []*ecdsa.PrivateKey{privKey}
 }
 
-func baseKafkaOrderer(t *testing.T) Orderer {
-	soloOrderer := baseSoloOrderer(t)
+func baseKafkaOrderer(t *testing.T) (Orderer, []*ecdsa.PrivateKey) {
+	soloOrderer, privKeys := baseSoloOrderer(t)
 	soloOrderer.OrdererType = orderer.ConsensusTypeKafka
 	soloOrderer.Kafka = orderer.Kafka{
 		Brokers: []string{"broker1", "broker2"},
 	}
 
-	return soloOrderer
+	return soloOrderer, privKeys
 }
 
-func baseEtcdRaftOrderer(t *testing.T) Orderer {
+func baseEtcdRaftOrderer(t *testing.T) (Orderer, []*ecdsa.PrivateKey) {
 	caCert, caPrivKey := generateCACertAndPrivateKey(t, "orderer-org")
 	cert, _ := generateCertAndPrivateKeyFromCACert(t, "orderer-org", caCert, caPrivKey)
 
-	soloOrderer := baseSoloOrderer(t)
+	soloOrderer, privKeys := baseSoloOrderer(t)
 	soloOrderer.OrdererType = orderer.ConsensusTypeEtcdRaft
 	soloOrderer.EtcdRaft = orderer.EtcdRaft{
 		Consenters: []orderer.Consenter{
@@ -1902,22 +1877,22 @@ func baseEtcdRaftOrderer(t *testing.T) Orderer {
 		Options: orderer.EtcdRaftOptions{},
 	}
 
-	return soloOrderer
+	return soloOrderer, privKeys
 }
 
 // baseOrdererChannelGroup creates a channel config group
 // that only contains an Orderer group.
-func baseOrdererChannelGroup(t *testing.T, ordererType string) (*cb.ConfigGroup, error) {
+func baseOrdererChannelGroup(t *testing.T, ordererType string) (*cb.ConfigGroup, []*ecdsa.PrivateKey, error) {
 	channelGroup := newConfigGroup()
 
-	ordererConf := baseOrdererOfType(t, ordererType)
+	ordererConf, privKeys := baseOrdererOfType(t, ordererType)
 	ordererGroup, err := newOrdererGroup(ordererConf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	channelGroup.Groups[OrdererGroupKey] = ordererGroup
 
-	return channelGroup, nil
+	return channelGroup, privKeys, nil
 }
 
 // marshalOrPanic is a helper for proto marshal.

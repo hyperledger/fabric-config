@@ -991,11 +991,6 @@ func baseMSP(t *testing.T) configtx.MSP {
 	cert, err := x509.ParseCertificate(certBlock.Bytes)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	privKeyBlock, _ := pem.Decode([]byte(dummyPrivateKey))
-	gt.Expect(privKeyBlock).NotTo(BeNil())
-	privKey, err := x509.ParsePKCS8PrivateKey(privKeyBlock.Bytes)
-	gt.Expect(err).NotTo(HaveOccurred())
-
 	crlBlock, _ := pem.Decode([]byte(dummyCRL))
 	gt.Expect(crlBlock).NotTo(BeNil())
 	crl, err := x509.ParseCRL(crlBlock.Bytes)
@@ -1007,13 +1002,6 @@ func baseMSP(t *testing.T) configtx.MSP {
 		IntermediateCerts: []*x509.Certificate{cert},
 		Admins:            []*x509.Certificate{cert},
 		RevocationList:    []*pkix.CertificateList{crl},
-		SigningIdentity: membership.SigningIdentityInfo{
-			PublicSigner: cert,
-			PrivateSigner: membership.KeyInfo{
-				KeyIdentifier: "SKI-1",
-				KeyMaterial:   privKey.(*ecdsa.PrivateKey),
-			},
-		},
 		OrganizationalUnitIdentifiers: []membership.OUIdentifier{
 			{
 				Certificate:                  cert,

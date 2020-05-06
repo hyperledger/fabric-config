@@ -54,10 +54,6 @@ type MSP struct {
 	Admins []*x509.Certificate
 	// Identity revocation list.
 	RevocationList []*pkix.CertificateList
-	// SigningIdentity holds information on the signing identity
-	// this peer is to use, and which is to be imported by the
-	// MSP defined before.
-	SigningIdentity membership.SigningIdentityInfo
 	// OrganizationalUnitIdentifiers holds one or more
 	// fabric organizational unit identifiers that belong to
 	// this MSP configuration.
@@ -256,25 +252,6 @@ func getMSPConfig(configGroup *cb.ConfigGroup) (MSP, error) {
 		return MSP{}, err
 	}
 
-	// SIGNING IDENTITY
-	publicSigner, err := parseCertificateFromBytes(fabricMSPConfig.SigningIdentity.PublicSigner)
-	if err != nil {
-		return MSP{}, fmt.Errorf("parsing signing identity public signer: %v", err)
-	}
-
-	keyMaterial, err := parsePrivateKeyFromBytes(fabricMSPConfig.SigningIdentity.PrivateSigner.KeyMaterial)
-	if err != nil {
-		return MSP{}, fmt.Errorf("parsing signing identity private key: %v", err)
-	}
-
-	signingIdentity := membership.SigningIdentityInfo{
-		PublicSigner: publicSigner,
-		PrivateSigner: membership.KeyInfo{
-			KeyIdentifier: fabricMSPConfig.SigningIdentity.PrivateSigner.KeyIdentifier,
-			KeyMaterial:   keyMaterial,
-		},
-	}
-
 	// OU IDENTIFIERS
 	ouIdentifiers, err := parseOUIdentifiers(fabricMSPConfig.OrganizationalUnitIdentifiers)
 	if err != nil {
@@ -343,7 +320,6 @@ func getMSPConfig(configGroup *cb.ConfigGroup) (MSP, error) {
 		IntermediateCerts:             intermediateCerts,
 		Admins:                        adminCerts,
 		RevocationList:                revocationList,
-		SigningIdentity:               signingIdentity,
 		OrganizationalUnitIdentifiers: ouIdentifiers,
 		CryptoConfig: membership.CryptoConfig{
 			SignatureHashFamily:            fabricMSPConfig.CryptoConfig.SignatureHashFamily,
@@ -445,28 +421,9 @@ func parseOUIdentifiers(identifiers []*mb.FabricOUIdentifier) ([]membership.OUId
 // toProto converts an MSP configuration to an mb.FabricMSPConfig proto.
 // It pem encodes x509 certificates and ECDSA private keys to byte slices.
 func (m *MSP) toProto() (*mb.FabricMSPConfig, error) {
-	var err error
-
-	// KeyMaterial is an optional EDCSA private key
-	keyMaterial := []byte{}
-	if m.SigningIdentity.PrivateSigner.KeyMaterial != nil {
-		keyMaterial, err = pemEncodePKCS8PrivateKey(m.SigningIdentity.PrivateSigner.KeyMaterial)
-		if err != nil {
-			return nil, fmt.Errorf("pem encode PKCS#8 private key: %v", err)
-		}
-	}
-
 	revocationList, err := buildPemEncodedRevocationList(m.RevocationList)
 	if err != nil {
 		return nil, fmt.Errorf("building pem encoded revocation list: %v", err)
-	}
-
-	signingIdentity := &mb.SigningIdentityInfo{
-		PublicSigner: pemEncodeX509Certificate(m.SigningIdentity.PublicSigner),
-		PrivateSigner: &mb.KeyInfo{
-			KeyIdentifier: m.SigningIdentity.PrivateSigner.KeyIdentifier,
-			KeyMaterial:   keyMaterial,
-		},
 	}
 
 	ouIdentifiers := buildOUIdentifiers(m.OrganizationalUnitIdentifiers)
@@ -500,7 +457,6 @@ func (m *MSP) toProto() (*mb.FabricMSPConfig, error) {
 		IntermediateCerts:             buildPemEncodedCertListFromX509(m.IntermediateCerts),
 		Admins:                        buildPemEncodedCertListFromX509(m.Admins),
 		RevocationList:                revocationList,
-		SigningIdentity:               signingIdentity,
 		OrganizationalUnitIdentifiers: ouIdentifiers,
 		CryptoConfig: &mb.FabricCryptoConfig{
 			SignatureHashFamily:            m.CryptoConfig.SignatureHashFamily,
