@@ -22,6 +22,7 @@ func TestOrganization(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	expectedOrg := baseApplicationOrg(t)
+	expectedOrg.AnchorPeers = nil
 	orgGroup, err := newOrgConfigGroup(expectedOrg)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -43,7 +44,7 @@ func TestApplicationOrg(t *testing.T) {
 	}
 	channelGroup, err := newChannelGroup(channel)
 	gt.Expect(err).NotTo(HaveOccurred())
-	orgGroup, err := newOrgConfigGroup(channel.Application.Organizations[0])
+	orgGroup, err := newApplicationOrgConfigGroup(channel.Application.Organizations[0])
 	gt.Expect(err).NotTo(HaveOccurred())
 	channelGroup.Groups[ApplicationGroupKey].Groups["Org1"] = orgGroup
 
@@ -273,7 +274,7 @@ func TestNewOrgConfigGroup(t *testing.T) {
 
 		baseSystemChannelProfile, _, _ := baseSystemChannelProfile(t)
 		org := baseSystemChannelProfile.Orderer.Organizations[0]
-		configGroup, err := newOrgConfigGroup(org)
+		configGroup, err := newOrdererOrgConfigGroup(org)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		certBase64, crlBase64 := certCRLBase64(t, org.MSP)

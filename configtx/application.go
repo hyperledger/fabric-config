@@ -244,7 +244,7 @@ func (c *ConfigTx) AnchorPeers(orgName string) ([]Address, error) {
 func (c *ConfigTx) SetApplicationOrg(org Organization) error {
 	appGroup := c.updated.ChannelGroup.Groups[ApplicationGroupKey]
 
-	orgGroup, err := newOrgConfigGroup(org)
+	orgGroup, err := newApplicationOrgConfigGroup(org)
 	if err != nil {
 		return fmt.Errorf("failed to create application org %s: %v", org.Name, err)
 	}
