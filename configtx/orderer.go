@@ -189,7 +189,7 @@ func (c *ConfigTx) OrdererConfiguration() (Orderer, error) {
 func (c *ConfigTx) SetOrdererOrg(org Organization) error {
 	ordererGroup := c.updated.ChannelGroup.Groups[OrdererGroupKey]
 
-	orgGroup, err := newOrgConfigGroup(org)
+	orgGroup, err := newOrdererOrgConfigGroup(org)
 	if err != nil {
 		return fmt.Errorf("failed to create orderer org '%s': %v", org.Name, err)
 	}
@@ -286,7 +286,7 @@ func newOrdererGroup(orderer Orderer) (*cb.ConfigGroup, error) {
 
 	// add orderer groups
 	for _, org := range orderer.Organizations {
-		ordererGroup.Groups[org.Name], err = newOrgConfigGroup(org)
+		ordererGroup.Groups[org.Name], err = newOrdererOrgConfigGroup(org)
 		if err != nil {
 			return nil, fmt.Errorf("org group '%s': %v", org.Name, err)
 		}
