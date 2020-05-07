@@ -277,6 +277,16 @@ func newSystemChannelGroup(channelConfig Channel) (*cb.ConfigGroup, error) {
 		return nil, fmt.Errorf("failed to set system channel policies: %v", err)
 	}
 
+	err = setValue(channelGroup, hashingAlgorithmValue(), AdminsPolicyKey)
+	if err != nil {
+		return nil, err
+	}
+
+	err = setValue(channelGroup, blockDataHashingStructureValue(), AdminsPolicyKey)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(channelConfig.Orderer.Addresses) == 0 {
 		return nil, errors.New("orderer endpoints is not defined in channel config")
 	}
