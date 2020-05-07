@@ -428,7 +428,7 @@ func (m *MSP) toProto() (*mb.FabricMSPConfig, error) {
 
 	ouIdentifiers := buildOUIdentifiers(m.OrganizationalUnitIdentifiers)
 
-	fabricNodeOUs := &mb.FabricNodeOUs{}
+	var fabricNodeOUs *mb.FabricNodeOUs
 	if m.NodeOUs != (membership.NodeOUs{}) {
 		fabricNodeOUs = &mb.FabricNodeOUs{
 			Enable: m.NodeOUs.Enable,

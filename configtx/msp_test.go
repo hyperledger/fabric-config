@@ -419,7 +419,7 @@ func TestMSPToProtoNoNodeOUs(t *testing.T) {
 		"identity_identifier_hash_function": "SHA256",
 		"signature_hash_family": "SHA3"
 	},
-	"fabric_node_ous": {},
+	"fabric_node_ous": null,
 	"intermediate_certs": [
 		"%[1]s"
 	],
