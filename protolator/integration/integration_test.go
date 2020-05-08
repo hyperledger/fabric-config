@@ -9,7 +9,6 @@ package integration
 import (
 	"bytes"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -59,18 +58,22 @@ func TestConfigUpdate(t *testing.T) {
 	err = proto.Unmarshal(blockBin, block)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	blockDataPayload := &cb.Payload{}
-	err = proto.Unmarshal(block.Data.Data[0], blockDataPayload)
+	envelope := &cb.Envelope{}
+	err = proto.Unmarshal(block.Data.Data[0], envelope)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	config := &cb.Config{}
+	blockDataPayload := &cb.Payload{}
+	err = proto.Unmarshal(envelope.Payload, blockDataPayload)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.ConfigEnvelope{}
 	err = proto.Unmarshal(blockDataPayload.Data, config)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	bidirectionalMarshal(t, &cb.ConfigUpdateEnvelope{
 		ConfigUpdate: protoMarshalOrPanic(&cb.ConfigUpdate{
-			ReadSet:  config.ChannelGroup,
-			WriteSet: config.ChannelGroup,
+			ReadSet:  config.Config.ChannelGroup,
+			WriteSet: config.Config.ChannelGroup,
 		}),
 	})
 }
@@ -120,8 +123,42 @@ func TestEmitDefaultsBug(t *testing.T) {
 		},
 	}
 
-	err := protolator.DeepMarshalJSON(os.Stdout, block)
+	buf := &bytes.Buffer{}
+	err := protolator.DeepMarshalJSON(buf, block)
 	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(buf.String()).To(MatchJSON(`
+{
+	"data": {
+		"data": [
+			{
+				"payload": {
+					"data": null,
+					"header": {
+						"channel_header": {
+							"channel_id": "",
+							"epoch": "0",
+							"extension": null,
+							"timestamp": null,
+							"tls_cert_hash": null,
+							"tx_id": "",
+							"type": 1,
+							"version": 0
+						},
+						"signature_header": null
+					}
+				},
+				"signature": "YmFy"
+			}
+		]
+	},
+	"header": {
+		"data_hash": null,
+		"number": "0",
+		"previous_hash": "Zm9v"
+	},
+	"metadata": null
+}
+`))
 }
 
 func TestProposalResponsePayload(t *testing.T) {
