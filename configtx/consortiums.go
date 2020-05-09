@@ -50,8 +50,8 @@ func (c *ConfigTx) Consortiums() *ConsortiumsGroup {
 }
 
 // Consortium returns a consortium group from the updated config.
-func (c *ConsortiumsGroup) Consortium(name string) *ConsortiumGroup {
-	consortiumGroup, ok := c.consortiumsGroup.Groups[name]
+func (c *ConfigTx) Consortium(name string) *ConsortiumGroup {
+	consortiumGroup, ok := c.updated.ChannelGroup.Groups[ConsortiumsGroupKey].Groups[name]
 	if !ok {
 		return nil
 	}
@@ -64,13 +64,18 @@ func (c *ConsortiumsGroup) SetConsortium(consortium Consortium) error {
 	c.consortiumsGroup.Groups[consortium.Name] = newConfigGroup()
 
 	for _, org := range consortium.Organizations {
-		err := c.Consortium(consortium.Name).SetOrganization(org)
+		err := c.consortium(consortium.Name).SetOrganization(org)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (c *ConsortiumsGroup) consortium(name string) *ConsortiumGroup {
+	consortiumGroup := c.consortiumsGroup.Groups[name]
+	return &ConsortiumGroup{name: name, consortiumGroup: consortiumGroup}
 }
 
 // RemoveConsortium removes a consortium from a channel configuration.
@@ -114,7 +119,7 @@ func (c *ConsortiumGroup) RemoveOrganization(name string) {
 func (c *ConsortiumsGroup) Configuration() ([]Consortium, error) {
 	consortiums := []Consortium{}
 	for consortiumName := range c.consortiumsGroup.Groups {
-		consortium, err := c.Consortium(consortiumName).Configuration()
+		consortium, err := c.consortium(consortiumName).Configuration()
 		if err != nil {
 			return nil, err
 		}

@@ -366,7 +366,7 @@ func TestSetConsortiumOrgPolicy(t *testing.T) {
 		},
 	}
 
-	consortium1Org1 := c.Consortiums().Consortium("Consortium1").Organization("Org1")
+	consortium1Org1 := c.Consortium("Consortium1").Organization("Org1")
 	err = consortium1Org1.SetPolicy("TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -410,7 +410,7 @@ func TestSetConsortiumOrgPolicyFailures(t *testing.T) {
 			expectedErr: "failed to set policy 'TestPolicy' to consortium org 'Org1': unknown policy type: ",
 		},
 	} {
-		err := c.Consortiums().Consortium(test.consortium).Organization(test.org).SetPolicy("TestPolicy", test.policy)
+		err := c.Consortium(test.consortium).Organization(test.org).SetPolicy("TestPolicy", test.policy)
 		gt.Expect(err).To(MatchError(test.expectedErr))
 	}
 }
@@ -456,7 +456,7 @@ func TestRemoveConsortiumOrgPolicy(t *testing.T) {
 		},
 	}
 
-	consortium1Org1 := c.Consortiums().Consortium("Consortium1").Organization("Org1")
+	consortium1Org1 := c.Consortium("Consortium1").Organization("Org1")
 	consortium1Org1.RemovePolicy("TestPolicy")
 
 	updatedPolicies, err := consortium1Org1.Policies()
@@ -788,7 +788,7 @@ func TestSetConsortiumChannelCreationPolicy(t *testing.T) {
 
 	updatedPolicy := Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Admins"}
 
-	consortium1 := c.Consortiums().Consortium("Consortium1")
+	consortium1 := c.Consortium("Consortium1")
 	err = consortium1.SetChannelCreationPolicy(updatedPolicy)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -841,7 +841,7 @@ func TestSetConsortiumChannelCreationPolicyFailures(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
-			err := c.Consortiums().Consortium(tt.consortiumName).SetChannelCreationPolicy(tt.updatedpolicy)
+			err := c.Consortium(tt.consortiumName).SetChannelCreationPolicy(tt.updatedpolicy)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -976,7 +976,7 @@ func TestConsortiumOrgPolicies(t *testing.T) {
 		},
 	}
 
-	policies, err := c.Consortiums().Consortium("Consortium1").Organization("Org1").Policies()
+	policies, err := c.Consortium("Consortium1").Organization("Org1").Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(policies).To(Equal(expectedPolicies))
 }

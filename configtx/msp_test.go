@@ -116,7 +116,7 @@ func TestConsortiumMSP(t *testing.T) {
 
 	c := New(config)
 
-	msp, err := c.Consortiums().Consortium("Consortium1").Organization("Org1").MSP()
+	msp, err := c.Consortium("Consortium1").Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(msp).To(Equal(expectedMSP))
 }
@@ -288,7 +288,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 				_, err := c.Orderer().Organization(tt.orgName).MSP()
 				gt.Expect(err).To(MatchError(tt.expectedErr))
 			case ConsortiumsGroupKey:
-				_, err := c.Consortiums().Consortium(tt.consortiumName).Organization(tt.orgName).MSP()
+				_, err := c.Consortium(tt.consortiumName).Organization(tt.orgName).MSP()
 				gt.Expect(err).To(MatchError(tt.expectedErr))
 			default:
 				t.Fatalf("invalid org type %s", tt.orgType)
@@ -432,7 +432,7 @@ func TestSetConsortiumMSP(t *testing.T) {
 	}
 	c := New(config)
 
-	consortium1 := c.Consortiums().Consortium("Consortium1")
+	consortium1 := c.Consortium("Consortium1")
 	consortiumOrg1MSP, err := consortium1.Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
 	consortiumOrg2MSP, err := consortium1.Organization("Org2").MSP()
@@ -809,7 +809,7 @@ func TestSetConsortiumMSPFailure(t *testing.T) {
 			}
 			c := New(config)
 
-			consortiumOrg1 := c.Consortiums().Consortium("Consortium1").Organization("Org1")
+			consortiumOrg1 := c.Consortium("Consortium1").Organization("Org1")
 			consortiumOrg1MSP, err := consortiumOrg1.MSP()
 			gt.Expect(err).NotTo(HaveOccurred())
 

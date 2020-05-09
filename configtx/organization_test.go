@@ -206,7 +206,7 @@ func TestConsortiumOrg(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			org, err := c.Consortiums().Consortium(tc.consortiumName).Organization(tc.orgName).Configuration()
+			org, err := c.Consortium(tc.consortiumName).Organization(tc.orgName).Configuration()
 			if tc.expectedErr != "" {
 				gt.Expect(Organization{}).To(Equal(org))
 				gt.Expect(err).To(MatchError(tc.expectedErr))
@@ -232,8 +232,8 @@ func TestRemoveConsortiumOrg(t *testing.T) {
 
 	c := New(config)
 
-	c.Consortiums().Consortium("Consortium1").RemoveOrganization("Org1")
-	gt.Expect(c.Consortiums().Consortium("Consortium1").Organization("Org1")).To(BeNil())
+	c.Consortium("Consortium1").RemoveOrganization("Org1")
+	gt.Expect(c.Consortium("Consortium1").Organization("Org1")).To(BeNil())
 }
 
 func TestNewOrgConfigGroup(t *testing.T) {

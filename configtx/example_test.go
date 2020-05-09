@@ -87,7 +87,7 @@ func Example_basic() {
 	baseConfig := fetchSystemChannelConfig()
 	c := configtx.New(baseConfig)
 
-	err := c.Consortiums().Consortium("SampleConsortium").SetChannelCreationPolicy(
+	err := c.Consortium("SampleConsortium").SetChannelCreationPolicy(
 		configtx.Policy{Type: configtx.ImplicitMetaPolicyType,
 			Rule: "MAJORITY Admins"})
 	if err != nil {
@@ -565,7 +565,7 @@ func ExampleConsortiumOrg_SetMSP() {
 	baseConfig := fetchSystemChannelConfig()
 	c := configtx.New(baseConfig)
 
-	sampleConsortiumOrg1 := c.Consortiums().Consortium("SampleConsortium").Organization("Org1")
+	sampleConsortiumOrg1 := c.Consortium("SampleConsortium").Organization("Org1")
 
 	msp, err := sampleConsortiumOrg1.MSP()
 	if err != nil {
