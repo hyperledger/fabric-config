@@ -1127,7 +1127,36 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 	}
 }
 
+func TestNewEnvelopeFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		spec         string
+		configUpdate *cb.ConfigUpdate
+		expectedErr  string
+	}{
+		{
+			spec:         "when no config update is provided",
+			configUpdate: nil,
+			expectedErr:  "marshaling config update: proto: Marshal called with nil",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.spec, func(t *testing.T) {
+			t.Parallel()
+			gt := NewGomegaWithT(t)
+
+			env, err := NewEnvelope(tc.configUpdate)
+			gt.Expect(err).To(MatchError(tc.expectedErr))
+			gt.Expect(env).To(BeNil())
+		})
+	}
+}
+
 func TestComputeUpdate(t *testing.T) {
+	t.Parallel()
 	gt := NewGomegaWithT(t)
 
 	value1Name := "foo"

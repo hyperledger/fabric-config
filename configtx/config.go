@@ -109,6 +109,26 @@ func (c *ConfigTx) ComputeUpdate(channelID string) (*cb.ConfigUpdate, error) {
 	return updt, nil
 }
 
+// NewEnvelope creates an envelope with the provided config update and config signatures.
+func NewEnvelope(c *cb.ConfigUpdate, signatures ...*cb.ConfigSignature) (*cb.Envelope, error) {
+	cBytes, err := proto.Marshal(c)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling config update: %v", err)
+	}
+
+	configUpdateEnvelope := &cb.ConfigUpdateEnvelope{
+		ConfigUpdate: cBytes,
+		Signatures:   signatures,
+	}
+
+	envelope, err := newEnvelope(cb.HeaderType_CONFIG_UPDATE, c.ChannelId, configUpdateEnvelope)
+	if err != nil {
+		return nil, err
+	}
+
+	return envelope, nil
+}
+
 // NewCreateChannelTx creates a create channel tx using the provided application channel
 // configuration and returns an unsigned envelope for an application channel creation transaction.
 func NewCreateChannelTx(channelConfig Channel, channelID string) (*cb.Envelope, error) {

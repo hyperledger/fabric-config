@@ -114,8 +114,8 @@ func Example_basic() {
 	}
 
 	for _, si := range signingIdentities {
-		// Sign the config update with the specified signer identity
-		configSignature, err := si.SignConfigUpdate(configUpdate)
+		// Create a signature for the config update with the specified signer identity
+		configSignature, err := si.CreateConfigSignature(configUpdate)
 		if err != nil {
 			panic(err)
 		}
@@ -123,9 +123,14 @@ func Example_basic() {
 		configSignatures = append(configSignatures, configSignature)
 	}
 
-	// Sign the envelope with the list of signatures
-	_, err = peer1SigningIdentity.SignConfigUpdateEnvelope(configUpdate,
-		configSignatures...)
+	// Create the envelope with the list of config signatures
+	env, err := configtx.NewEnvelope(configUpdate, configSignatures...)
+	if err != nil {
+		panic(err)
+	}
+
+	// Sign the envelope with a signing identity
+	err = peer1SigningIdentity.SignEnvelope(env)
 	if err != nil {
 		panic(err)
 	}
