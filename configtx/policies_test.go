@@ -81,10 +81,11 @@ func TestRemoveApplicationOrgPolicy(t *testing.T) {
 	expectedOrgConfigGroup, _ := newOrgConfigGroup(application.Organizations[0])
 	expectedPolicies := expectedOrgConfigGroup.Policies
 
-	err := c.RemoveApplicationOrgPolicy("Org1", "TestPolicy")
+	applicationOrg1 := c.Application().Organization("Org1")
+	err := applicationOrg1.RemovePolicy("TestPolicy")
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	actualOrg1Policies := c.UpdatedConfig().ChannelGroup.Groups[ApplicationGroupKey].Groups["Org1"].Policies
+	actualOrg1Policies := applicationOrg1.orgGroup.Policies
 	gt.Expect(actualOrg1Policies).To(Equal(expectedPolicies))
 }
 
@@ -115,7 +116,7 @@ func TestRemoveApplicationOrgPolicyFailures(t *testing.T) {
 
 	c := New(config)
 
-	err := c.RemoveApplicationOrgPolicy("Org1", "TestPolicy")
+	err := c.Application().Organization("Org1").RemovePolicy("TestPolicy")
 	gt.Expect(err).To(MatchError("unknown policy type: 15"))
 }
 
@@ -148,10 +149,12 @@ func TestSetApplicationOrgPolicy(t *testing.T) {
 	expectedPolicies := expectedOrgConfigGroup.Policies
 	expectedPolicies["TestPolicy"] = expectedPolicies[EndorsementPolicyKey]
 
-	err := c.SetApplicationOrgPolicy("Org1", AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
+	applicationOrg1 := c.Application().Organization("Org1")
+	err := applicationOrg1.SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	actualOrg1Policies := c.UpdatedConfig().ChannelGroup.Groups[ApplicationGroupKey].Groups["Org1"].Policies
+	actualOrg1Policies := applicationOrg1.orgGroup.Policies
+	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(actualOrg1Policies).To(Equal(expectedPolicies))
 }
 
@@ -178,7 +181,7 @@ func TestSetApplicationOrgPolicyFailures(t *testing.T) {
 
 	c := New(config)
 
-	err := c.SetApplicationOrgPolicy("Org1", AdminsPolicyKey, "TestPolicy", Policy{})
+	err := c.Application().Organization("Org1").SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
 	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
@@ -218,10 +221,11 @@ func TestSetApplicationPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.SetApplicationPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
+	a := c.Application()
+	err = a.SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	updatedPolicies, err := getPolicies(c.UpdatedConfig().ChannelGroup.Groups[ApplicationGroupKey].Policies)
+	updatedPolicies, err := a.Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -246,7 +250,7 @@ func TestSetApplicationPolicyFailures(t *testing.T) {
 	expectedPolicies := application.Policies
 	expectedPolicies["TestPolicy"] = expectedPolicies[EndorsementPolicyKey]
 
-	err = c.SetApplicationPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
+	err = c.Application().SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
 	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
@@ -283,10 +287,11 @@ func TestRemoveApplicationPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.RemoveApplicationPolicy("TestPolicy")
+	a := c.Application()
+	err = a.RemovePolicy("TestPolicy")
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	updatedPolicies, err := getPolicies(c.UpdatedConfig().ChannelGroup.Groups[ApplicationGroupKey].Policies)
+	updatedPolicies, err := a.Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -314,7 +319,7 @@ func TestRemoveApplicationPolicyFailures(t *testing.T) {
 
 	c := New(config)
 
-	err = c.RemoveApplicationPolicy("TestPolicy")
+	err = c.Application().RemovePolicy("TestPolicy")
 	gt.Expect(err).To(MatchError("unknown policy type: 15"))
 }
 
@@ -361,11 +366,11 @@ func TestSetConsortiumOrgPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.SetConsortiumOrgPolicy("Consortium1", "Org1", "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
+	consortium1Org1 := c.Consortium("Consortium1").Organization("Org1")
+	err = consortium1Org1.SetPolicy("TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	consortium1Org1 := c.updated.ChannelGroup.Groups[ConsortiumsGroupKey].Groups["Consortium1"].Groups["Org1"]
-	updatedPolicies, err := getPolicies(consortium1Org1.Policies)
+	updatedPolicies, err := consortium1Org1.Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -405,7 +410,7 @@ func TestSetConsortiumOrgPolicyFailures(t *testing.T) {
 			expectedErr: "failed to set policy 'TestPolicy' to consortium org 'Org1': unknown policy type: ",
 		},
 	} {
-		err := c.SetConsortiumOrgPolicy(test.consortium, test.org, "TestPolicy", test.policy)
+		err := c.Consortium(test.consortium).Organization(test.org).SetPolicy("TestPolicy", test.policy)
 		gt.Expect(err).To(MatchError(test.expectedErr))
 	}
 }
@@ -451,10 +456,10 @@ func TestRemoveConsortiumOrgPolicy(t *testing.T) {
 		},
 	}
 
-	c.RemoveConsortiumOrgPolicy("Consortium1", "Org1", "TestPolicy")
+	consortium1Org1 := c.Consortium("Consortium1").Organization("Org1")
+	consortium1Org1.RemovePolicy("TestPolicy")
 
-	consortium1Org1 := c.UpdatedConfig().ChannelGroup.Groups[ConsortiumsGroupKey].Groups["Consortium1"].Groups["Org1"]
-	updatedPolicies, err := getPolicies(consortium1Org1.Policies)
+	updatedPolicies, err := consortium1Org1.Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -502,11 +507,10 @@ func TestSetOrdererPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.SetOrdererPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Endorsement"})
+	err = c.Orderer().SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	ordererConfigGroup := c.UpdatedConfig().ChannelGroup.Groups[OrdererGroupKey]
-	updatedPolicies, err := getPolicies(ordererConfigGroup.Policies)
+	updatedPolicies, err := c.Orderer().Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -531,7 +535,7 @@ func TestSetOrdererPolicyFailures(t *testing.T) {
 
 	c := New(config)
 
-	err = c.SetOrdererPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
+	err = c.Orderer().SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
 	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
@@ -575,11 +579,10 @@ func TestRemoveOrdererPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.RemoveOrdererPolicy("TestPolicy")
+	err = c.Orderer().RemovePolicy("TestPolicy")
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	ordererConfigGroup := c.updated.ChannelGroup.Groups[OrdererGroupKey]
-	updatedPolicies, err := getPolicies(ordererConfigGroup.Policies)
+	updatedPolicies, err := c.Orderer().Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -619,14 +622,6 @@ func TestRemoveOrdererPolicyFailures(t *testing.T) {
 			policyName:  BlockValidationPolicyKey,
 			expectedErr: "BlockValidation policy must be defined",
 		},
-		{
-			testName: "when orderer is missing",
-			ordererGrpMod: func(og cb.ConfigGroup) *cb.ConfigGroup {
-				return nil
-			},
-			policyName:  "TestPolicy",
-			expectedErr: "orderer missing from config",
-		},
 	}
 
 	for _, tt := range tests {
@@ -641,7 +636,7 @@ func TestRemoveOrdererPolicyFailures(t *testing.T) {
 				config.ChannelGroup.Groups[OrdererGroupKey] = ordererGroup
 			}
 
-			err = c.RemoveOrdererPolicy(tt.policyName)
+			err = c.Orderer().RemovePolicy(tt.policyName)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -690,11 +685,11 @@ func TestSetOrdererOrgPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.SetOrdererOrgPolicy("OrdererOrg", AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Endorsement"})
+	ordererOrg := c.Orderer().Organization("OrdererOrg")
+	err = ordererOrg.SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	ordererOrgConfigGroup := c.UpdatedConfig().ChannelGroup.Groups[OrdererGroupKey].Groups["OrdererOrg"]
-	updatedPolicies, err := getPolicies(ordererOrgConfigGroup.Policies)
+	updatedPolicies, err := ordererOrg.Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
@@ -719,7 +714,7 @@ func TestSetOrdererOrgPolicyFailures(t *testing.T) {
 
 	c := New(config)
 
-	err = c.SetOrdererOrgPolicy("OrdererOrg", AdminsPolicyKey, "TestPolicy", Policy{})
+	err = c.Orderer().Organization("OrdererOrg").SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
 	gt.Expect(err).To(MatchError("unknown policy type: "))
 }
 
@@ -763,37 +758,12 @@ func TestRemoveOrdererOrgPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.RemoveOrdererOrgPolicy("OrdererOrg", "TestPolicy")
+	err = c.Orderer().Organization("OrdererOrg").RemovePolicy("TestPolicy")
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	ordererOrgConfigGroup := c.UpdatedConfig().ChannelGroup.Groups[OrdererGroupKey].Groups["OrdererOrg"]
-	updatedPolicies, err := getPolicies(ordererOrgConfigGroup.Policies)
+	updatedPolicies, err := c.Orderer().Organization("OrdererOrg").Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
-}
-
-func TestRemoveOrdererOrgPolicyFailures(t *testing.T) {
-	t.Parallel()
-
-	gt := NewGomegaWithT(t)
-
-	baseOrdererConf, _ := baseSoloOrderer(t)
-
-	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	config := &cb.Config{
-		ChannelGroup: &cb.ConfigGroup{
-			Groups: map[string]*cb.ConfigGroup{
-				"Orderer": ordererGroup,
-			},
-		},
-	}
-
-	c := New(config)
-
-	err = c.RemoveOrdererOrgPolicy("bad-org", "TestPolicy")
-	gt.Expect(err).To(MatchError("orderer org bad-org does not exist in channel config"))
 }
 
 func TestSetConsortiumChannelCreationPolicy(t *testing.T) {
@@ -818,11 +788,11 @@ func TestSetConsortiumChannelCreationPolicy(t *testing.T) {
 
 	updatedPolicy := Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Admins"}
 
-	err = c.SetConsortiumChannelCreationPolicy("Consortium1", updatedPolicy)
+	consortium1 := c.Consortium("Consortium1")
+	err = consortium1.SetChannelCreationPolicy(updatedPolicy)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	consortium := c.UpdatedConfig().ChannelGroup.Groups[ConsortiumsGroupKey].Groups["Consortium1"]
-	creationPolicy := consortium.Values[ChannelCreationPolicyKey]
+	creationPolicy := consortium1.consortiumGroup.Values[ChannelCreationPolicyKey]
 	policy := &cb.Policy{}
 	err = proto.Unmarshal(creationPolicy.Value, policy)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -871,7 +841,7 @@ func TestSetConsortiumChannelCreationPolicyFailures(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
-			err := c.SetConsortiumChannelCreationPolicy(tt.consortiumName, tt.updatedpolicy)
+			err := c.Consortium(tt.consortiumName).SetChannelCreationPolicy(tt.updatedpolicy)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -893,7 +863,7 @@ func TestSetChannelPolicy(t *testing.T) {
 		"TestPolicy": {Type: ImplicitMetaPolicyType, Rule: "ANY Readers"},
 	}
 
-	err = c.SetChannelPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Readers"})
+	err = c.Channel().SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Readers"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	updatedChannelPolicy, err := getPolicies(c.updated.ChannelGroup.Policies)
@@ -931,14 +901,14 @@ func TestRemoveChannelPolicy(t *testing.T) {
 		},
 	}
 
-	err = c.RemoveChannelPolicy(ReadersPolicyKey)
+	err = c.Channel().RemovePolicy(ReadersPolicyKey)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	updatedChannelPolicy, err := getPolicies(c.UpdatedConfig().ChannelGroup.Policies)
+	updatedChannelPolicy, err := c.Channel().Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(updatedChannelPolicy).To(Equal(expectedPolicies))
 
-	originalChannel := c.OriginalConfig().ChannelGroup
+	originalChannel := c.original.ChannelGroup
 	gt.Expect(originalChannel.Policies).To(HaveLen(3))
 	gt.Expect(originalChannel.Policies[ReadersPolicyKey]).ToNot(BeNil())
 }
@@ -963,7 +933,7 @@ func TestRemoveChannelPolicyFailures(t *testing.T) {
 	}
 	c := New(config)
 
-	err = c.RemoveChannelPolicy(ReadersPolicyKey)
+	err = c.Channel().RemovePolicy(ReadersPolicyKey)
 	gt.Expect(err).To(MatchError("unknown policy type: 15"))
 }
 
@@ -1006,56 +976,7 @@ func TestConsortiumOrgPolicies(t *testing.T) {
 		},
 	}
 
-	policies, err := c.ConsortiumOrgPolicies("Consortium1", "Org1")
+	policies, err := c.Consortium("Consortium1").Organization("Org1").Policies()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(policies).To(Equal(expectedPolicies))
-}
-
-func TestConsortiumOrgPoliciesFailures(t *testing.T) {
-	t.Parallel()
-
-	gt := NewGomegaWithT(t)
-
-	consortiums, _ := baseConsortiums(t)
-
-	consortiumsGroup, err := newConsortiumsGroup(consortiums)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	config := &cb.Config{
-		ChannelGroup: &cb.ConfigGroup{
-			Groups: map[string]*cb.ConfigGroup{
-				ConsortiumsGroupKey: consortiumsGroup,
-			},
-		},
-	}
-
-	c := New(config)
-
-	tests := []struct {
-		testName       string
-		consortiumName string
-		orgName        string
-		expectedErr    string
-	}{
-		{
-			testName:       "when consortium does not exist",
-			consortiumName: "BadConsortium",
-			orgName:        "Org1",
-			expectedErr:    "consortium BadConsortium does not exist in channel config",
-		},
-		{
-			testName:       "when org does not exist",
-			consortiumName: "Consortium1",
-			orgName:        "BadOrg",
-			expectedErr:    "consortium org BadOrg does not exist in channel config",
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.testName, func(t *testing.T) {
-			_, err = c.ConsortiumOrgPolicies(tt.consortiumName, tt.orgName)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
-		})
-	}
 }

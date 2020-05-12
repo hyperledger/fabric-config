@@ -93,16 +93,6 @@ func New(config *cb.Config) ConfigTx {
 	}
 }
 
-// OriginalConfig returns the original unedited config.
-func (c *ConfigTx) OriginalConfig() *cb.Config {
-	return c.original
-}
-
-// UpdatedConfig returns the modified config.
-func (c *ConfigTx) UpdatedConfig() *cb.Config {
-	return c.updated
-}
-
 // ComputeUpdate computes the ConfigUpdate from a base and modified config transaction.
 func (c *ConfigTx) ComputeUpdate(channelID string) (*cb.ConfigUpdate, error) {
 	if channelID == "" {
@@ -117,70 +107,6 @@ func (c *ConfigTx) ComputeUpdate(channelID string) (*cb.ConfigUpdate, error) {
 	updt.ChannelId = channelID
 
 	return updt, nil
-}
-
-// ChannelConfiguration returns a channel configuration value from a config transaction.
-func (c *ConfigTx) ChannelConfiguration() (Channel, error) {
-	channelGroup := c.original.ChannelGroup
-	var (
-		err          error
-		consortium   string
-		application  Application
-		orderer      Orderer
-		consortiums  []Consortium
-		capabilities []string
-	)
-
-	if _, ok := channelGroup.Values[ConsortiumKey]; ok {
-		consortiumProto := &cb.Consortium{}
-		err := unmarshalConfigValueAtKey(channelGroup, ConsortiumKey, consortiumProto)
-		if err != nil {
-			return Channel{}, err
-		}
-		consortium = consortiumProto.Name
-	}
-
-	if _, ok := channelGroup.Groups[ApplicationGroupKey]; ok {
-		application, err = c.ApplicationConfiguration()
-		if err != nil {
-			return Channel{}, err
-		}
-	}
-
-	if _, ok := channelGroup.Groups[OrdererGroupKey]; ok {
-		orderer, err = c.OrdererConfiguration()
-		if err != nil {
-			return Channel{}, err
-		}
-	}
-
-	if _, ok := channelGroup.Groups[ConsortiumsGroupKey]; ok {
-		consortiums, err = c.Consortiums()
-		if err != nil {
-			return Channel{}, err
-		}
-	}
-
-	if _, ok := channelGroup.Values[CapabilitiesKey]; ok {
-		capabilities, err = c.ChannelCapabilities()
-		if err != nil {
-			return Channel{}, err
-		}
-	}
-
-	policies, err := c.ChannelPolicies()
-	if err != nil {
-		return Channel{}, err
-	}
-
-	return Channel{
-		Consortium:   consortium,
-		Application:  application,
-		Orderer:      orderer,
-		Consortiums:  consortiums,
-		Capabilities: capabilities,
-		Policies:     policies,
-	}, nil
 }
 
 // NewCreateChannelTx creates a create channel tx using the provided application channel

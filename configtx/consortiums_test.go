@@ -750,18 +750,17 @@ func TestSetConsortiumOrg(t *testing.T) {
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedConfigJSON), expectedConfigProto)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	err = c.SetConsortiumOrg(orgToAdd, "Consortium1")
+	err = c.Consortium("Consortium1").SetOrganization(orgToAdd)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(proto.Equal(c.UpdatedConfig(), expectedConfigProto)).To(BeTrue())
+	gt.Expect(proto.Equal(c.updated, expectedConfigProto)).To(BeTrue())
 }
 
 func TestSetConsortiumOrgFailures(t *testing.T) {
 	t.Parallel()
 
 	orgToAdd := Organization{
-		Name:     "test-org",
-		Policies: orgStandardPolicies(),
+		Name: "test-org",
 	}
 
 	for _, test := range []struct {
@@ -772,10 +771,10 @@ func TestSetConsortiumOrgFailures(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name:        "When the consortium name is not specified",
+			name:        "When the organization doesn't have policies defined",
 			org:         orgToAdd,
 			consortium:  "",
-			expectedErr: "consortium is required",
+			expectedErr: "failed to create consortium org test-org: no policies defined",
 		},
 	} {
 		test := test
@@ -798,7 +797,7 @@ func TestSetConsortiumOrgFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.SetConsortiumOrg(test.org, test.consortium)
+			err = c.Consortium(test.consortium).SetOrganization(test.org)
 			gt.Expect(err).To(MatchError(test.expectedErr))
 		})
 	}
@@ -825,10 +824,9 @@ func TestRemoveConsortium(t *testing.T) {
 
 	c := New(config)
 
-	c.RemoveConsortium("Consortium1")
+	c.Consortiums().RemoveConsortium("Consortium1")
 
-	updatedConsortiumsGroup := c.UpdatedConfig().ChannelGroup.Groups[ConsortiumsGroupKey]
-	gt.Expect(updatedConsortiumsGroup.Groups["Consortium1"]).To(BeNil())
+	gt.Expect(c.Consortium("Consortium1")).To(BeNil())
 }
 
 func TestGetConsortiums(t *testing.T) {
@@ -852,7 +850,7 @@ func TestGetConsortiums(t *testing.T) {
 	config := &cb.Config{ChannelGroup: channelGroup}
 	c := New(config)
 
-	consortiums, err := c.Consortiums()
+	consortiums, err := c.Consortiums().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(len(baseConsortiums)).To(Equal(len(consortiums)))
 }
@@ -894,7 +892,7 @@ func TestSetConsortium(t *testing.T) {
 	newConsortium := consortiums[0]
 	newConsortium.Name = "Consortium2"
 
-	err = c.SetConsortium(newConsortium)
+	err = c.Consortiums().SetConsortium(newConsortium)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	org1CertBase64, org1CRLBase64 := certCRLBase64(t, consortiums[0].Organizations[0].MSP)
@@ -1416,33 +1414,7 @@ func TestSetConsortium(t *testing.T) {
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedConfigJSON), expectedConfigProto)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(proto.Equal(c.UpdatedConfig(), expectedConfigProto)).To(BeTrue())
-}
-
-func TestSetConsortiumFailures(t *testing.T) {
-	t.Parallel()
-
-	gt := NewGomegaWithT(t)
-
-	consortiums, _ := baseConsortiums(t)
-	consortiumsGroup, err := newConsortiumsGroup(consortiums)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	config := &cb.Config{
-		ChannelGroup: &cb.ConfigGroup{
-			Groups: map[string]*cb.ConfigGroup{
-				"Consortiums": consortiumsGroup,
-			},
-		},
-	}
-
-	c := New(config)
-
-	newConsortium := consortiums[0]
-	newConsortium.Name = ""
-
-	err = c.SetConsortium(newConsortium)
-	gt.Expect(err).To(MatchError("consortium is required"))
+	gt.Expect(proto.Equal(c.updated, expectedConfigProto)).To(BeTrue())
 }
 
 func baseConsortiums(t *testing.T) ([]Consortium, []*ecdsa.PrivateKey) {

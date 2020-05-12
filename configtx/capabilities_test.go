@@ -32,18 +32,18 @@ func TestChannelCapabilities(t *testing.T) {
 		},
 	}
 
-	c := New(config)
-
 	err := setValue(config.ChannelGroup, capabilitiesValue(expectedCapabilities), AdminsPolicyKey)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	channelCapabilities, err := c.ChannelCapabilities()
+	c := New(config)
+
+	channelCapabilities, err := c.Channel().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(channelCapabilities).To(Equal(expectedCapabilities))
 
 	// Delete the capabilities key and assert retrieval to return nil
-	delete(config.ChannelGroup.Values, CapabilitiesKey)
-	channelCapabilities, err = c.ChannelCapabilities()
+	delete(c.Channel().channelGroup.Values, CapabilitiesKey)
+	channelCapabilities, err = c.Channel().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(channelCapabilities).To(BeNil())
 }
@@ -67,13 +67,13 @@ func TestOrdererCapabilities(t *testing.T) {
 
 	c := New(config)
 
-	ordererCapabilities, err := c.OrdererCapabilities()
+	ordererCapabilities, err := c.Orderer().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(ordererCapabilities).To(Equal(baseOrdererConf.Capabilities))
 
 	// Delete the capabilities key and assert retrieval to return nil
-	delete(config.ChannelGroup.Groups[OrdererGroupKey].Values, CapabilitiesKey)
-	ordererCapabilities, err = c.OrdererCapabilities()
+	delete(c.Orderer().ordererGroup.Values, CapabilitiesKey)
+	ordererCapabilities, err = c.Orderer().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(ordererCapabilities).To(BeNil())
 }
@@ -97,13 +97,13 @@ func TestApplicationCapabilities(t *testing.T) {
 
 	c := New(config)
 
-	applicationCapabilities, err := c.ApplicationCapabilities()
+	applicationCapabilities, err := c.Application().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(applicationCapabilities).To(Equal(baseApplicationConf.Capabilities))
 
 	// Delete the capabilities key and assert retrieval to return nil
-	delete(config.ChannelGroup.Groups[ApplicationGroupKey].Values, CapabilitiesKey)
-	applicationCapabilities, err = c.ApplicationCapabilities()
+	delete(c.Application().applicationGroup.Values, CapabilitiesKey)
+	applicationCapabilities, err = c.Application().Capabilities()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(applicationCapabilities).To(BeNil())
 }
@@ -142,11 +142,11 @@ func TestSetChannelCapability(t *testing.T) {
 }
 `
 
-	err := c.AddChannelCapability("V3_0")
+	err := c.Channel().AddCapability("V3_0")
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := bytes.Buffer{}
-	err = protolator.DeepMarshalJSON(&buf, &commonext.DynamicChannelGroup{ConfigGroup: c.UpdatedConfig().ChannelGroup})
+	err = protolator.DeepMarshalJSON(&buf, &commonext.DynamicChannelGroup{ConfigGroup: c.Channel().channelGroup})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
@@ -173,7 +173,7 @@ func TestSetChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -186,7 +186,7 @@ func TestSetChannelCapabilityFailures(t *testing.T) {
 
 			c := New(tt.config)
 
-			err := c.AddChannelCapability(tt.capability)
+			err := c.Channel().AddCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -431,11 +431,11 @@ func TestAddOrdererCapability(t *testing.T) {
 `, orgCertBase64, orgCRLBase64)
 
 	capability := "V3_0"
-	err = c.AddOrdererCapability(capability)
+	err = c.Orderer().AddCapability(capability)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := bytes.Buffer{}
-	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.UpdatedConfig().ChannelGroup.Groups[OrdererGroupKey]})
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
@@ -460,7 +460,7 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving orderer capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -486,7 +486,7 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.AddOrdererCapability(tt.capability)
+			err = c.Orderer().AddCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -690,14 +690,14 @@ func TestAddApplicationCapability(t *testing.T) {
 
 			c := New(config)
 
-			err = c.AddApplicationCapability(tt.capability)
+			err = c.Application().AddCapability(tt.capability)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			updatedApplicationGroupJSON := bytes.Buffer{}
-			err = protolator.DeepMarshalJSON(&updatedApplicationGroupJSON, &peerext.DynamicApplicationGroup{ConfigGroup: c.UpdatedConfig().ChannelGroup.Groups[ApplicationGroupKey]})
+			err = protolator.DeepMarshalJSON(&updatedApplicationGroupJSON, &peerext.DynamicApplicationGroup{ConfigGroup: c.Application().applicationGroup})
 			gt.Expect(err).NotTo(HaveOccurred())
 			originalApplicationGroupJSON := bytes.Buffer{}
-			err = protolator.DeepMarshalJSON(&originalApplicationGroupJSON, &peerext.DynamicApplicationGroup{ConfigGroup: c.OriginalConfig().ChannelGroup.Groups[ApplicationGroupKey]})
+			err = protolator.DeepMarshalJSON(&originalApplicationGroupJSON, &peerext.DynamicApplicationGroup{ConfigGroup: c.original.ChannelGroup.Groups[ApplicationGroupKey]})
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			gt.Expect(updatedApplicationGroupJSON.String()).To(Equal(tt.expectedConfigGroupJSON))
@@ -729,7 +729,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving application capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -755,7 +755,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.AddApplicationCapability(tt.capability)
+			err = c.Application().AddCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -798,11 +798,11 @@ func TestRemoveChannelCapability(t *testing.T) {
 }
 `
 
-	err := c.RemoveChannelCapability("V3_0")
+	err := c.Channel().RemoveCapability("V3_0")
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := bytes.Buffer{}
-	err = protolator.DeepMarshalJSON(&buf, &commonext.DynamicChannelGroup{ConfigGroup: c.UpdatedConfig().ChannelGroup})
+	err = protolator.DeepMarshalJSON(&buf, &commonext.DynamicChannelGroup{ConfigGroup: c.Channel().channelGroup})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
@@ -843,7 +843,7 @@ func TestRemoveChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -856,7 +856,7 @@ func TestRemoveChannelCapabilityFailures(t *testing.T) {
 
 			c := New(tt.config)
 
-			err := c.RemoveChannelCapability(tt.capability)
+			err := c.Channel().RemoveCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -1098,11 +1098,11 @@ func TestRemoveOrdererCapability(t *testing.T) {
 `, orgCertBase64, orgCRLBase64)
 
 	capability := "V1_3"
-	err = c.RemoveOrdererCapability(capability)
+	err = c.Orderer().RemoveCapability(capability)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := bytes.Buffer{}
-	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.UpdatedConfig().ChannelGroup.Groups[OrdererGroupKey]})
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
@@ -1134,7 +1134,7 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving orderer capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -1160,7 +1160,7 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.RemoveOrdererCapability(tt.capability)
+			err = c.Orderer().RemoveCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -1262,7 +1262,7 @@ func TestRemoveApplicationCapability(t *testing.T) {
 }
 `
 	capability := "V1_3"
-	err = c.RemoveApplicationCapability(capability)
+	err = c.Application().RemoveCapability(capability)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := bytes.Buffer{}
@@ -1298,7 +1298,7 @@ func TestRemoveApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshalling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving application capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -1324,7 +1324,7 @@ func TestRemoveApplicationCapabilityFailures(t *testing.T) {
 
 			c := New(config)
 
-			err = c.RemoveApplicationCapability(tt.capability)
+			err = c.Application().RemoveCapability(tt.capability)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
