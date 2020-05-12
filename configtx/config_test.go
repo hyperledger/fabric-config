@@ -184,15 +184,17 @@ func TestNewCreateChannelTx(t *testing.T) {
 	profile := baseProfile(t)
 
 	// creating a create channel transaction
-	envelope, err := NewCreateChannelTx(profile, "testchannel")
-	gt.Expect(err).ToNot(HaveOccurred())
+	createChannelTx, err := NewCreateChannelTx(profile, "testchannel")
+	gt.Expect(err).NotTo(HaveOccurred())
+	envelope, err := NewEnvelope(createChannelTx)
+	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(envelope).ToNot(BeNil())
 
 	// Unmarshaling actual and expected envelope to set
 	// the expected timestamp to the actual timestamp
 	expectedEnvelope := cb.Envelope{}
 	err = protolator.DeepUnmarshalJSON(bytes.NewBufferString(expectedEnvelopeJSON), &expectedEnvelope)
-	gt.Expect(err).ToNot(HaveOccurred())
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	expectedPayload := cb.Payload{}
 	err = proto.Unmarshal(expectedEnvelope.Payload, &expectedPayload)
@@ -390,8 +392,8 @@ func TestNewCreateChannelTxFailure(t *testing.T) {
 
 			profile := tt.profileMod()
 
-			env, err := NewCreateChannelTx(profile, tt.channelID)
-			gt.Expect(env).To(BeNil())
+			createChannelTx, err := NewCreateChannelTx(profile, tt.channelID)
+			gt.Expect(createChannelTx).To(BeNil())
 			gt.Expect(err).To(MatchError(tt.err))
 		})
 	}
@@ -1127,7 +1129,36 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 	}
 }
 
+func TestNewEnvelopeFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		spec         string
+		configUpdate *cb.ConfigUpdate
+		expectedErr  string
+	}{
+		{
+			spec:         "when no config update is provided",
+			configUpdate: nil,
+			expectedErr:  "marshaling config update: proto: Marshal called with nil",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.spec, func(t *testing.T) {
+			t.Parallel()
+			gt := NewGomegaWithT(t)
+
+			env, err := NewEnvelope(tc.configUpdate)
+			gt.Expect(err).To(MatchError(tc.expectedErr))
+			gt.Expect(env).To(BeNil())
+		})
+	}
+}
+
 func TestComputeUpdate(t *testing.T) {
+	t.Parallel()
 	gt := NewGomegaWithT(t)
 
 	value1Name := "foo"

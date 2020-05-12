@@ -85,7 +85,7 @@ func TestPublic(t *testing.T) {
 	gt.Expect(signingIdentity.Public()).To(Equal(cert.PublicKey))
 }
 
-func TestSignConfigUpdate(t *testing.T) {
+func TestCreateSignature(t *testing.T) {
 	t.Parallel()
 
 	gt := NewGomegaWithT(t)
@@ -97,7 +97,7 @@ func TestSignConfigUpdate(t *testing.T) {
 		MSPID:       "test-msp",
 	}
 
-	configSignature, err := signingIdentity.SignConfigUpdate(&cb.ConfigUpdate{})
+	configSignature, err := signingIdentity.CreateConfigSignature(&cb.ConfigUpdate{})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	sh, err := signingIdentity.signatureHeader()
@@ -109,7 +109,7 @@ func TestSignConfigUpdate(t *testing.T) {
 	gt.Expect(signatureHeader.Creator).To(Equal(expectedCreator))
 }
 
-func TestSignConfigUpdateEnvelope(t *testing.T) {
+func TestSignEnvelope(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
@@ -125,15 +125,17 @@ func TestSignConfigUpdateEnvelope(t *testing.T) {
 	configUpdate := &cb.ConfigUpdate{
 		ChannelId: "testchannel",
 	}
-	configSignature, err := signingIdentity.SignConfigUpdate(configUpdate)
+	configSignature, err := signingIdentity.CreateConfigSignature(configUpdate)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	// create signed config envelope
-	signedEnv, err := signingIdentity.SignConfigUpdateEnvelope(configUpdate, configSignature)
+	env, err := NewEnvelope(configUpdate, configSignature)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = signingIdentity.SignEnvelope(env)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	payload := &cb.Payload{}
-	err = proto.Unmarshal(signedEnv.Payload, payload)
+	err = proto.Unmarshal(env.Payload, payload)
 	gt.Expect(err).NotTo(HaveOccurred())
 	// check header channel ID equal
 	channelHeader := &cb.ChannelHeader{}
@@ -148,56 +150,6 @@ func TestSignConfigUpdateEnvelope(t *testing.T) {
 	expectedSignatures := configEnv.Signatures[0]
 	gt.Expect(expectedSignatures.SignatureHeader).To(Equal(configSignature.SignatureHeader))
 	gt.Expect(expectedSignatures.Signature).To(Equal(configSignature.Signature))
-}
-
-func TestSignConfigUpdateEnvelopeFailures(t *testing.T) {
-	t.Parallel()
-	gt := NewGomegaWithT(t)
-
-	// create signingIdentity
-	cert, privateKey := generateCACertAndPrivateKey(t, "org1.example.com")
-	signingIdentity := SigningIdentity{
-		Certificate: cert,
-		PrivateKey:  privateKey,
-		MSPID:       "test-msp",
-	}
-
-	// create detached config signature
-	configUpdate := &cb.ConfigUpdate{
-		ChannelId: "testchannel",
-	}
-	configSignature, err := signingIdentity.SignConfigUpdate(configUpdate)
-
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	tests := []struct {
-		spec            string
-		configUpdate    *cb.ConfigUpdate
-		signingIdentity SigningIdentity
-		configSignature []*cb.ConfigSignature
-		expectedErr     string
-	}{
-		{
-			spec:            "when no signatures are provided",
-			configUpdate:    nil,
-			signingIdentity: signingIdentity,
-			configSignature: []*cb.ConfigSignature{configSignature},
-			expectedErr:     "marshaling config update: proto: Marshal called with nil",
-		},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.spec, func(t *testing.T) {
-			t.Parallel()
-			gt := NewGomegaWithT(t)
-
-			// create signed config envelope
-			signedEnv, err := tc.signingIdentity.SignConfigUpdateEnvelope(tc.configUpdate, tc.configSignature...)
-			gt.Expect(err).To(MatchError(tc.expectedErr))
-			gt.Expect(signedEnv).To(BeNil())
-		})
-	}
 }
 
 func TestToLowS(t *testing.T) {

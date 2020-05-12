@@ -109,9 +109,29 @@ func (c *ConfigTx) ComputeUpdate(channelID string) (*cb.ConfigUpdate, error) {
 	return updt, nil
 }
 
-// NewCreateChannelTx creates a create channel tx using the provided application channel
-// configuration and returns an unsigned envelope for an application channel creation transaction.
-func NewCreateChannelTx(channelConfig Channel, channelID string) (*cb.Envelope, error) {
+// NewEnvelope creates an envelope with the provided config update and config signatures.
+func NewEnvelope(c *cb.ConfigUpdate, signatures ...*cb.ConfigSignature) (*cb.Envelope, error) {
+	cBytes, err := proto.Marshal(c)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling config update: %v", err)
+	}
+
+	configUpdateEnvelope := &cb.ConfigUpdateEnvelope{
+		ConfigUpdate: cBytes,
+		Signatures:   signatures,
+	}
+
+	envelope, err := newEnvelope(cb.HeaderType_CONFIG_UPDATE, c.ChannelId, configUpdateEnvelope)
+	if err != nil {
+		return nil, err
+	}
+
+	return envelope, nil
+}
+
+// NewCreateChannelTx creates a create channel config update transaction using the
+// provided application channel configuration.
+func NewCreateChannelTx(channelConfig Channel, channelID string) (*cb.ConfigUpdate, error) {
 	var err error
 
 	if channelID == "" {
@@ -123,26 +143,12 @@ func NewCreateChannelTx(channelConfig Channel, channelID string) (*cb.Envelope, 
 		return nil, fmt.Errorf("creating default config template: %v", err)
 	}
 
-	newChannelConfigUpdate, err := newChannelCreateConfigUpdate(channelID, channelConfig, ct)
+	configUpdate, err := newChannelCreateConfigUpdate(channelID, channelConfig, ct)
 	if err != nil {
 		return nil, fmt.Errorf("creating channel create config update: %v", err)
 	}
 
-	configUpdate, err := proto.Marshal(newChannelConfigUpdate)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling new channel config update: %v", err)
-	}
-
-	newConfigUpdateEnv := &cb.ConfigUpdateEnvelope{
-		ConfigUpdate: configUpdate,
-	}
-
-	env, err := newEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, newConfigUpdateEnv)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create envelope: %v", err)
-	}
-
-	return env, nil
+	return configUpdate, nil
 }
 
 // NewSystemChannelGenesisBlock creates a genesis block using the provided consortiums and orderer
