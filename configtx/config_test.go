@@ -19,6 +19,29 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func TestNewConfigTx(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	channel, _, err := baseApplicationChannelGroup(t)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	original := &cb.Config{
+		ChannelGroup: channel,
+	}
+
+	c := New(original)
+	gt.Expect(proto.Equal(c.OriginalConfig(), original)).To(BeTrue())
+	gt.Expect(proto.Equal(c.UpdatedConfig(), original)).To(BeTrue())
+
+	err = c.Application().AddCapability("fake-capability")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(proto.Equal(c.OriginalConfig(), original)).To(BeTrue())
+	gt.Expect(proto.Equal(c.UpdatedConfig(), original)).To(BeFalse())
+}
+
 func TestNewCreateChannelTx(t *testing.T) {
 	t.Parallel()
 
