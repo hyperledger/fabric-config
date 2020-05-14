@@ -93,6 +93,16 @@ func New(config *cb.Config) ConfigTx {
 	}
 }
 
+// OriginalConfig returns the original unedited config.
+func (c *ConfigTx) OriginalConfig() *cb.Config {
+	return c.original
+}
+
+// UpdatedConfig returns the modified config.
+func (c *ConfigTx) UpdatedConfig() *cb.Config {
+	return c.updated
+}
+
 // ComputeUpdate computes the ConfigUpdate from a base and modified config transaction.
 func (c *ConfigTx) ComputeUpdate(channelID string) (*cb.ConfigUpdate, error) {
 	if channelID == "" {
