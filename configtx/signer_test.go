@@ -12,8 +12,10 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"io"
 	"math/big"
 	"testing"
@@ -33,21 +35,21 @@ func TestSign(t *testing.T) {
 		spec        string
 		privateKey  crypto.PrivateKey
 		reader      io.Reader
-		digest      []byte
+		msg         []byte
 		expectedErr string
 	}{
 		{
 			spec:        "success",
 			privateKey:  privateKey,
 			reader:      rand.Reader,
-			digest:      []byte("banana"),
+			msg:         []byte("banana"),
 			expectedErr: "",
 		},
 		{
 			spec:        "unsupported rsa private key",
 			privateKey:  &rsa.PrivateKey{},
 			reader:      rand.Reader,
-			digest:      []byte("banana"),
+			msg:         []byte("banana"),
 			expectedErr: "signing with private key of type *rsa.PrivateKey not supported",
 		},
 	}
@@ -64,11 +66,21 @@ func TestSign(t *testing.T) {
 				MSPID:       "test-msp",
 			}
 
-			_, err := signingIdentity.Sign(tc.reader, tc.digest, nil)
+			signature, err := signingIdentity.Sign(tc.reader, tc.msg, nil)
 			if tc.expectedErr == "" {
 				gt.Expect(err).NotTo(HaveOccurred())
+				gt.Expect(signature).NotTo(BeNil())
+				sig := &ecdsaSignature{}
+				_, err := asn1.Unmarshal(signature, sig)
+				gt.Expect(err).NotTo(HaveOccurred())
+				hash := sha256.New()
+				hash.Write(tc.msg)
+				digest := hash.Sum(nil)
+				valid := ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), digest, sig.R, sig.S)
+				gt.Expect(valid).To(BeTrue())
 			} else {
 				gt.Expect(err).To(MatchError(tc.expectedErr))
+				gt.Expect(signature).To(BeNil())
 			}
 		})
 	}
