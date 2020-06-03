@@ -882,15 +882,6 @@ func TestSetOrdererConfiguration(t *testing.T) {
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	var addresses []string
-	for _, a := range baseOrdererConf.Addresses {
-		addresses = append(addresses, fmt.Sprintf("%s:%d", a.Host, a.Port))
-	}
-	originalOrdererAddresses, err := proto.Marshal(&cb.OrdererAddresses{
-		Addresses: addresses,
-	})
-	gt.Expect(err).NotTo(HaveOccurred())
-
 	imp, err := implicitMetaFromString(baseOrdererConf.Policies[AdminsPolicyKey].Rule)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -902,12 +893,7 @@ func TestSetOrdererConfiguration(t *testing.T) {
 			Groups: map[string]*cb.ConfigGroup{
 				OrdererGroupKey: ordererGroup,
 			},
-			Values: map[string]*cb.ConfigValue{
-				OrdererAddressesKey: {
-					Value:     originalOrdererAddresses,
-					ModPolicy: AdminsPolicyKey,
-				},
-			},
+			Values: map[string]*cb.ConfigValue{},
 			Policies: map[string]*cb.ConfigPolicy{
 				AdminsPolicyKey: {
 					Policy: &cb.Policy{
@@ -922,9 +908,8 @@ func TestSetOrdererConfiguration(t *testing.T) {
 
 	updatedOrdererConf := baseOrdererConf
 
-	// Modify MaxMessageCount, Addresses, and ConesnsusType to etcdraft
+	// Modify MaxMessageCount and ConesnsusType to etcdraft
 	updatedOrdererConf.BatchSize.MaxMessageCount = 10000
-	updatedOrdererConf.Addresses = []Address{{Host: "newhost", Port: 345}}
 	updatedOrdererConf.OrdererType = orderer.ConsensusTypeEtcdRaft
 	updatedOrdererConf.EtcdRaft = orderer.EtcdRaft{
 		Consenters: []orderer.Consenter{
@@ -1195,17 +1180,7 @@ func TestSetOrdererConfiguration(t *testing.T) {
 				"version": "0"
 			}
 		},
-		"values": {
-			"OrdererAddresses": {
-				"mod_policy": "/Channel/Orderer/Admins",
-				"value": {
-					"addresses": [
-						"newhost:345"
-					]
-				},
-				"version": "0"
-			}
-		},
+		"values": {},
 		"version": "0"
 	},
 	"sequence": "0"
@@ -1248,23 +1223,12 @@ func TestOrdererConfiguration(t *testing.T) {
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
 			gt.Expect(err).NotTo(HaveOccurred())
 
-			var addresses []string
-			for _, a := range baseOrdererConf.Addresses {
-				addresses = append(addresses, fmt.Sprintf("%s:%d", a.Host, a.Port))
-			}
-			ordererAddresses, err := proto.Marshal(&cb.OrdererAddresses{Addresses: addresses})
-			gt.Expect(err).NotTo(HaveOccurred())
-
 			config := &cb.Config{
 				ChannelGroup: &cb.ConfigGroup{
 					Groups: map[string]*cb.ConfigGroup{
 						OrdererGroupKey: ordererGroup,
 					},
-					Values: map[string]*cb.ConfigValue{
-						OrdererAddressesKey: {
-							Value: ordererAddresses,
-						},
-					},
+					Values: map[string]*cb.ConfigValue{},
 				},
 			}
 
@@ -1321,14 +1285,6 @@ func TestOrdererConfigurationFailure(t *testing.T) {
 			},
 			expectedErr: "batch timeout configuration 'invalidtime' is not a duration string",
 		},
-		{
-			testName:    "Missing orderer address in config",
-			ordererType: orderer.ConsensusTypeSolo,
-			configMod: func(config *cb.Config, gt *GomegaWithT) {
-				delete(config.ChannelGroup.Values, OrdererAddressesKey)
-			},
-			expectedErr: "config does not contain value for OrdererAddresses",
-		},
 	}
 
 	for _, tt := range tests {
@@ -1350,9 +1306,6 @@ func TestOrdererConfigurationFailure(t *testing.T) {
 					Values: map[string]*cb.ConfigValue{},
 				},
 			}
-
-			err = setValue(config.ChannelGroup, ordererAddressesValue(baseOrdererConfig.Addresses), ordererAdminsPolicyName)
-			gt.Expect(err).NotTo(HaveOccurred())
 
 			if tt.configMod != nil {
 				tt.configMod(config, gt)
@@ -1813,12 +1766,6 @@ func baseSoloOrderer(t *testing.T) (Orderer, []*ecdsa.PrivateKey) {
 			MaxMessageCount:   100,
 			AbsoluteMaxBytes:  100,
 			PreferredMaxBytes: 100,
-		},
-		Addresses: []Address{
-			{
-				Host: "localhost",
-				Port: 123,
-			},
 		},
 		State: orderer.ConsensusStateNormal,
 	}, []*ecdsa.PrivateKey{privKey}

@@ -989,15 +989,6 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 											}
 										},
 										"version": "0"
-									},
-									"OrdererAddresses": {
-										"mod_policy": "/Channel/Orderer/Admins",
-										"value": {
-											"addresses": [
-												"localhost:123"
-											]
-										},
-										"version": "0"
 									}
 								},
 								"version": "0"
@@ -1108,11 +1099,11 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 			testName: "When creating the default system config template with empty orderer endpoints",
 			profileMod: func() Channel {
 				profile, _, _ := baseSystemChannelProfile(t)
-				profile.Orderer.Addresses = []Address{}
+				profile.Orderer.Organizations[0].OrdererEndpoints = []string{}
 				return profile
 			},
 			channelID: "testsystemchannel",
-			err:       errors.New("creating system channel group: orderer endpoints is not defined in channel config"),
+			err:       errors.New("creating system channel group: orderer endpoints are not defined for org OrdererOrg"),
 		},
 		{
 			testName: "When creating the default config template with empty capabilities",
@@ -1132,7 +1123,7 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 				return profile
 			},
 			channelID: "testsystemchannel",
-			err:       errors.New("creating system channel group: orderer endpoints is not defined in channel config"),
+			err:       errors.New("creating system channel group: no policies defined"),
 		},
 	}
 

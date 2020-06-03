@@ -434,13 +434,7 @@ func ExampleNewSystemChannelGenesisBlock() {
 				PreferredMaxBytes: 100,
 			},
 			BatchTimeout: 2 * time.Second,
-			Addresses: []configtx.Address{
-				{
-					Host: "localhost",
-					Port: 123,
-				},
-			},
-			State: orderer.ConsensusStateNormal,
+			State:        orderer.ConsensusStateNormal,
 		},
 		Capabilities: []string{"V2_0"},
 		Policies: map[string]configtx.Policy{
@@ -816,14 +810,7 @@ func fetchChannelConfig() *cb.Config {
 					},
 				},
 			},
-			Values: map[string]*cb.ConfigValue{
-				configtx.OrdererAddressesKey: {
-					Value: marshalOrPanic(&cb.OrdererAddresses{
-						Addresses: []string{"127.0.0.1:7050"},
-					}),
-					ModPolicy: configtx.AdminsPolicyKey,
-				},
-			},
+			Values: map[string]*cb.ConfigValue{},
 			Policies: map[string]*cb.ConfigPolicy{
 				configtx.AdminsPolicyKey: {
 					ModPolicy: configtx.AdminsPolicyKey,
