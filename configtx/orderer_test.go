@@ -1241,6 +1241,35 @@ func TestOrdererConfiguration(t *testing.T) {
 	}
 }
 
+func TestOrdererConfigurationNoOrdererEndpoints(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseOrdererOfType(t, orderer.ConsensusTypeSolo)
+
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+			Values: map[string]*cb.ConfigValue{},
+		},
+	}
+
+	delete(config.ChannelGroup.Groups[OrdererGroupKey].Groups["OrdererOrg"].Values, EndpointsKey)
+
+	c := New(config)
+
+	ordererConf, err := c.Orderer().Configuration()
+	gt.Expect(err).NotTo(HaveOccurred())
+	baseOrdererConf.Organizations[0].OrdererEndpoints = nil
+	gt.Expect(ordererConf).To(Equal(baseOrdererConf))
+}
+
 func TestOrdererConfigurationFailure(t *testing.T) {
 	t.Parallel()
 
