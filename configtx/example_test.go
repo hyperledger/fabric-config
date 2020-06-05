@@ -95,7 +95,7 @@ func Example_basic() {
 	}
 
 	// Compute the delta
-	configUpdate, err := c.ComputeUpdate("testsyschannel")
+	marshaledUpdate, err := c.ComputeMarshaledUpdate("testsyschannel")
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +115,7 @@ func Example_basic() {
 
 	for _, si := range signingIdentities {
 		// Create a signature for the config update with the specified signer identity
-		configSignature, err := si.CreateConfigSignature(configUpdate)
+		configSignature, err := si.CreateConfigSignature(marshaledUpdate)
 		if err != nil {
 			panic(err)
 		}
@@ -124,7 +124,7 @@ func Example_basic() {
 	}
 
 	// Create the envelope with the list of config signatures
-	env, err := configtx.NewEnvelope(configUpdate, configSignatures...)
+	env, err := configtx.NewEnvelope(marshaledUpdate, configSignatures...)
 	if err != nil {
 		panic(err)
 	}
@@ -461,7 +461,7 @@ func ExampleNewSystemChannelGenesisBlock() {
 	}
 }
 
-func ExampleNewCreateChannelTx() {
+func ExampleNewMarshaledCreateChannelTx() {
 	channel := configtx.Channel{
 		Consortium: "SampleConsortium",
 		Application: configtx.Application{
@@ -502,7 +502,7 @@ func ExampleNewCreateChannelTx() {
 		},
 	}
 
-	_, err := configtx.NewCreateChannelTx(channel, "testchannel")
+	_, err := configtx.NewMarshaledCreateChannelTx(channel, "testchannel")
 	if err != nil {
 		panic(err)
 	}

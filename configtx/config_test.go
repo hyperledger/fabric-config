@@ -207,9 +207,9 @@ func TestNewCreateChannelTx(t *testing.T) {
 	profile := baseProfile(t)
 
 	// creating a create channel transaction
-	createChannelTx, err := NewCreateChannelTx(profile, "testchannel")
+	marshaledCreateChannelTx, err := NewMarshaledCreateChannelTx(profile, "testchannel")
 	gt.Expect(err).NotTo(HaveOccurred())
-	envelope, err := NewEnvelope(createChannelTx)
+	envelope, err := NewEnvelope(marshaledCreateChannelTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(envelope).ToNot(BeNil())
 
@@ -415,8 +415,8 @@ func TestNewCreateChannelTxFailure(t *testing.T) {
 
 			profile := tt.profileMod()
 
-			createChannelTx, err := NewCreateChannelTx(profile, tt.channelID)
-			gt.Expect(createChannelTx).To(BeNil())
+			marshaledCreateChannelTx, err := NewMarshaledCreateChannelTx(profile, tt.channelID)
+			gt.Expect(marshaledCreateChannelTx).To(BeNil())
 			gt.Expect(err).To(MatchError(tt.err))
 		})
 	}
@@ -1147,14 +1147,14 @@ func TestNewEnvelopeFailures(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		spec         string
-		configUpdate *cb.ConfigUpdate
-		expectedErr  string
+		spec            string
+		marshaledUpdate []byte
+		expectedErr     string
 	}{
 		{
-			spec:         "when no config update is provided",
-			configUpdate: nil,
-			expectedErr:  "marshaling config update: proto: Marshal called with nil",
+			spec:            "when the marshaled config update isn't a config update",
+			marshaledUpdate: []byte("not-a-config-update"),
+			expectedErr:     "unmarshaling config update: proto: can't skip unknown wire type 6",
 		},
 	}
 
@@ -1164,14 +1164,14 @@ func TestNewEnvelopeFailures(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			env, err := NewEnvelope(tc.configUpdate)
+			env, err := NewEnvelope(tc.marshaledUpdate)
 			gt.Expect(err).To(MatchError(tc.expectedErr))
 			gt.Expect(env).To(BeNil())
 		})
 	}
 }
 
-func TestComputeUpdate(t *testing.T) {
+func TestComputeMarshaledUpdate(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
@@ -1228,9 +1228,12 @@ func TestComputeUpdate(t *testing.T) {
 		WriteSet:  expectedWriteSet,
 	}
 
-	configUpdate, err := c.ComputeUpdate(channelID)
+	marshaledUpdate, err := c.ComputeMarshaledUpdate(channelID)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(configUpdate).To(Equal(&expectedConfig))
+	configUpdate := &cb.ConfigUpdate{}
+	err = proto.Unmarshal(marshaledUpdate, configUpdate)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(proto.Equal(configUpdate, &expectedConfig)).To(BeTrue())
 }
 
 func TestComputeUpdateFailures(t *testing.T) {
@@ -1264,9 +1267,9 @@ func TestComputeUpdateFailures(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
-			configUpdate, err := c.ComputeUpdate(test.channelID)
+			marshaledUpdate, err := c.ComputeMarshaledUpdate(test.channelID)
 			gt.Expect(err).To(MatchError(test.expectedErr))
-			gt.Expect(configUpdate).To(BeNil())
+			gt.Expect(marshaledUpdate).To(BeNil())
 		})
 	}
 }
