@@ -109,7 +109,7 @@ func TestCreateSignature(t *testing.T) {
 		MSPID:       "test-msp",
 	}
 
-	configSignature, err := signingIdentity.CreateConfigSignature(&cb.ConfigUpdate{})
+	configSignature, err := signingIdentity.CreateConfigSignature([]byte("config"))
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	sh, err := signingIdentity.signatureHeader()
@@ -137,11 +137,13 @@ func TestSignEnvelope(t *testing.T) {
 	configUpdate := &cb.ConfigUpdate{
 		ChannelId: "testchannel",
 	}
-	configSignature, err := signingIdentity.CreateConfigSignature(configUpdate)
+	marshaledUpdate, err := proto.Marshal(configUpdate)
+	gt.Expect(err).NotTo(HaveOccurred())
+	configSignature, err := signingIdentity.CreateConfigSignature(marshaledUpdate)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	// create signed config envelope
-	env, err := NewEnvelope(configUpdate, configSignature)
+	env, err := NewEnvelope(marshaledUpdate, configSignature)
 	gt.Expect(err).NotTo(HaveOccurred())
 	err = signingIdentity.SignEnvelope(env)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -162,6 +164,94 @@ func TestSignEnvelope(t *testing.T) {
 	expectedSignatures := configEnv.Signatures[0]
 	gt.Expect(expectedSignatures.SignatureHeader).To(Equal(configSignature.SignatureHeader))
 	gt.Expect(expectedSignatures.Signature).To(Equal(configSignature.Signature))
+}
+
+func TestSignEnvelopeWithAnchorPeers(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	baseApplicationConf, _ := baseApplication(t)
+
+	applicationGroup, err := newApplicationGroup(baseApplicationConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				ApplicationGroupKey: applicationGroup,
+			},
+			Values:   map[string]*cb.ConfigValue{},
+			Policies: map[string]*cb.ConfigPolicy{},
+		},
+	}
+
+	c := New(config)
+
+	newOrg1AnchorPeer := Address{
+		Host: "host3",
+		Port: 123,
+	}
+
+	newOrg2AnchorPeer := Address{
+		Host: "host4",
+		Port: 123,
+	}
+
+	err = c.Application().Organization("Org1").AddAnchorPeer(newOrg1AnchorPeer)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = c.Application().Organization("Org2").AddAnchorPeer(newOrg2AnchorPeer)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	// create signingIdentity
+	cert, privateKey := generateCACertAndPrivateKey(t, "org1.example.com")
+	signingIdentity := SigningIdentity{
+		Certificate: cert,
+		PrivateKey:  privateKey,
+		MSPID:       "test-msp",
+	}
+
+	configUpdate, err := c.ComputeMarshaledUpdate("fake-channel")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	configSignature, err := signingIdentity.CreateConfigSignature(configUpdate)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	// create signed config envelope
+	env, err := NewEnvelope(configUpdate, configSignature)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = signingIdentity.SignEnvelope(env)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	// check envelope signature is valid
+	// env.Signature
+	sig := &ecdsaSignature{}
+	_, err = asn1.Unmarshal(env.Signature, sig)
+	gt.Expect(err).NotTo(HaveOccurred())
+	hash := sha256.New()
+	hash.Write(env.Payload)
+	digest := hash.Sum(nil)
+	valid := ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), digest, sig.R, sig.S)
+	gt.Expect(valid).To(BeTrue())
+
+	payload := &cb.Payload{}
+	err = proto.Unmarshal(env.Payload, payload)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	configUpdateEnvelope := &cb.ConfigUpdateEnvelope{}
+	err = proto.Unmarshal(payload.Data, configUpdateEnvelope)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(configUpdateEnvelope.Signatures).To(HaveLen(1))
+
+	sig = &ecdsaSignature{}
+	configSig := configUpdateEnvelope.Signatures[0]
+	_, err = asn1.Unmarshal(configSig.Signature, sig)
+	gt.Expect(err).NotTo(HaveOccurred())
+	hash = sha256.New()
+	hash.Write(concatenateBytes(configSig.SignatureHeader, configUpdateEnvelope.ConfigUpdate))
+	digest = hash.Sum(nil)
+	valid = ecdsa.Verify(cert.PublicKey.(*ecdsa.PublicKey), digest, sig.R, sig.S)
+	gt.Expect(valid).To(BeTrue())
 }
 
 func TestToLowS(t *testing.T) {
