@@ -319,3 +319,28 @@ func TestRemoveChannelPolicyFailures(t *testing.T) {
 	err = c.Channel().RemovePolicy(ReadersPolicyKey)
 	gt.Expect(err).To(MatchError("unknown policy type: 15"))
 }
+
+func TestRemoveLegacyOrdererAddresses(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Values: map[string]*cb.ConfigValue{
+				OrdererAddressesKey: {
+					ModPolicy: AdminsPolicyKey,
+					Value: marshalOrPanic(&cb.OrdererAddresses{
+						Addresses: []string{"127.0.0.1:8050"},
+					}),
+				},
+			},
+		},
+	}
+
+	c := New(config)
+
+	c.Channel().RemoveLegacyOrdererAddresses()
+
+	_, exists := c.Channel().channelGroup.Values[OrdererAddressesKey]
+	gt.Expect(exists).To(BeFalse())
+}
