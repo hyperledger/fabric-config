@@ -19,7 +19,6 @@ import (
 	"github.com/hyperledger/fabric-config/protolator"
 	"github.com/hyperledger/fabric-config/protolator/protoext/peerext"
 	cb "github.com/hyperledger/fabric-protos-go/common"
-	mb "github.com/hyperledger/fabric-protos-go/msp"
 	. "github.com/onsi/gomega"
 )
 
@@ -100,7 +99,7 @@ func TestNewApplicationGroup(t *testing.T) {
 }
 `
 
-	applicationGroup, err := newApplicationGroup(application)
+	applicationGroup, err := newApplicationGroupTemplate(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	expectedApplication := &cb.ConfigGroup{}
@@ -199,7 +198,7 @@ func TestNewApplicationGroupFailure(t *testing.T) {
 			application, _ := baseApplication(t)
 			tt.applicationMod(&application)
 
-			configGrp, err := newApplicationGroup(application)
+			configGrp, err := newApplicationGroupTemplate(application)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 			gt.Expect(configGrp).To(BeNil())
 		})
@@ -213,7 +212,7 @@ func TestAddAnchorPeer(t *testing.T) {
 
 	baseApplicationConf, _ := baseApplication(t)
 
-	applicationGroup, err := newApplicationGroup(baseApplicationConf)
+	applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -376,7 +375,7 @@ func TestRemoveAnchorPeer(t *testing.T) {
 
 	baseApplicationConf, _ := baseApplication(t)
 
-	applicationGroup, err := newApplicationGroup(baseApplicationConf)
+	applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -531,7 +530,7 @@ func TestRemoveAnchorPeerFailure(t *testing.T) {
 
 			baseApplicationConf, _ := baseApplication(t)
 
-			applicationGroup, err := newApplicationGroup(baseApplicationConf)
+			applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			applicationGroup.Groups["Org1"].Values = tt.configValues
@@ -560,7 +559,7 @@ func TestAnchorPeers(t *testing.T) {
 	channelGroup := newConfigGroup()
 
 	application, _ := baseApplication(t)
-	applicationGroup, err := newApplicationGroup(application)
+	applicationGroup, err := newApplicationGroupTemplate(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
@@ -629,7 +628,7 @@ func TestSetACL(t *testing.T) {
 
 			channelGroup := newConfigGroup()
 			baseApplication, _ := baseApplication(t)
-			applicationGroup, err := newApplicationGroup(baseApplication)
+			applicationGroup, err := newApplicationGroupTemplate(baseApplication)
 
 			channelGroup.Groups[ApplicationGroupKey] = applicationGroup
 			config := &cb.Config{
@@ -693,7 +692,7 @@ func TestRemoveACL(t *testing.T) {
 			baseApplication, _ := baseApplication(t)
 			baseApplication.ACLs["acl2"] = "acl2Value"
 			baseApplication.ACLs["acl3"] = "acl3Value"
-			applicationGroup, err := newApplicationGroup(baseApplication)
+			applicationGroup, err := newApplicationGroupTemplate(baseApplication)
 
 			channelGroup.Groups[ApplicationGroupKey] = applicationGroup
 			config := &cb.Config{
@@ -904,7 +903,7 @@ func TestSetApplicationOrgFailures(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	application, _ := baseApplication(t)
-	appGroup, err := newApplicationGroup(application)
+	appGroup, err := newApplicationGroupTemplate(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -930,7 +929,7 @@ func TestApplicationConfiguration(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	baseApplicationConf, _ := baseApplication(t)
-	applicationGroup, err := newApplicationGroup(baseApplicationConf)
+	applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -986,7 +985,7 @@ func TestApplicationConfigurationFailure(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			baseApplicationConf, _ := baseApplication(t)
-			applicationGroup, err := newApplicationGroup(baseApplicationConf)
+			applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			config := &cb.Config{
@@ -1016,7 +1015,7 @@ func TestApplicationACLs(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	baseApplicationConf, _ := baseApplication(t)
-	applicationGroup, err := newApplicationGroup(baseApplicationConf)
+	applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1040,7 +1039,7 @@ func TestApplicationACLsFailure(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	baseApplicationConf, _ := baseApplication(t)
-	applicationGroup, err := newApplicationGroup(baseApplicationConf)
+	applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1068,7 +1067,7 @@ func TestApplicationCapabilities(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	baseApplicationConf, _ := baseApplication(t)
-	applicationGroup, err := newApplicationGroup(baseApplicationConf)
+	applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1277,7 +1276,7 @@ func TestAddApplicationCapability(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			baseApp, _ := baseApplication(t)
-			appGroup, err := newApplicationGroup(baseApp)
+			appGroup, err := newApplicationGroupTemplate(baseApp)
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			config := &cb.Config{
@@ -1341,7 +1340,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			baseApp, _ := baseApplication(t)
-			appGroup, err := newApplicationGroup(baseApp)
+			appGroup, err := newApplicationGroupTemplate(baseApp)
 			gt.Expect(err).NotTo(HaveOccurred())
 			tt.applicationGroup(appGroup)
 
@@ -1367,7 +1366,7 @@ func TestRemoveApplicationCapability(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	baseApp, _ := baseApplication(t)
-	appGroup, err := newApplicationGroup(baseApp)
+	appGroup, err := newApplicationGroupTemplate(baseApp)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1505,7 +1504,7 @@ func TestRemoveApplicationCapabilityFailures(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			baseApp, _ := baseApplication(t)
-			appGroup, err := newApplicationGroup(baseApp)
+			appGroup, err := newApplicationGroupTemplate(baseApp)
 			gt.Expect(err).NotTo(HaveOccurred())
 			tt.applicationGroup(appGroup)
 
@@ -1743,7 +1742,7 @@ func TestSetApplicationPolicy(t *testing.T) {
 	channelGroup := newConfigGroup()
 	application, _ := baseApplication(t)
 
-	applicationGroup, err := newApplicationGroup(application)
+	applicationGroup, err := newApplicationGroupTemplate(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
@@ -1788,7 +1787,7 @@ func TestSetApplicationPolicyFailures(t *testing.T) {
 	channelGroup := newConfigGroup()
 	application, _ := baseApplication(t)
 
-	applicationGroup, err := newApplicationGroup(application)
+	applicationGroup, err := newApplicationGroupTemplate(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
@@ -1812,7 +1811,7 @@ func TestRemoveApplicationPolicy(t *testing.T) {
 	channelGroup := newConfigGroup()
 	application, _ := baseApplication(t)
 
-	applicationGroup, err := newApplicationGroup(application)
+	applicationGroup, err := newApplicationGroupTemplate(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 	applicationGroup.Policies["TestPolicy"] = applicationGroup.Policies[AdminsPolicyKey]
 
@@ -1854,7 +1853,7 @@ func TestRemoveApplicationPolicyFailures(t *testing.T) {
 	channelGroup := newConfigGroup()
 	application, _ := baseApplication(t)
 
-	applicationGroup, err := newApplicationGroup(application)
+	applicationGroup, err := newApplicationGroupTemplate(application)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	applicationGroup.Policies[EndorsementPolicyKey] = &cb.ConfigPolicy{
@@ -1879,26 +1878,8 @@ func TestApplicationMSP(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	expectedMSP, _ := baseMSP(t)
-
 	application, _ := baseApplication(t)
 	applicationGroup, err := newApplicationGroup(application)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	// We need to add the base MSP config to the base application since
-	// newApplicationGroup doesn't apply MSP configuration
-	applicationOrgGroup := applicationGroup.Groups["Org1"]
-	fabricMSPConfig, err := expectedMSP.toProto()
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	conf, err := proto.Marshal(fabricMSPConfig)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	mspConfig := &mb.MSPConfig{
-		Config: conf,
-	}
-
-	err = setValue(applicationOrgGroup, mspValue(mspConfig), AdminsPolicyKey)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -1913,7 +1894,7 @@ func TestApplicationMSP(t *testing.T) {
 
 	msp, err := c.Application().Organization("Org1").MSP()
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(msp).To(Equal(expectedMSP))
+	gt.Expect(msp).To(Equal(application.Organizations[0].MSP))
 }
 
 func TestSetApplicationMSPFailure(t *testing.T) {
