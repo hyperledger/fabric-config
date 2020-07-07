@@ -2044,6 +2044,807 @@ func TestAddOrdererCapability(t *testing.T) {
 	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
 }
 
+func TestAddConsenter(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName    string
+		baseOrderer func(o Orderer) Orderer
+	}{
+		{
+			testName: "when adding a fourth consenter",
+			baseOrderer: func(o Orderer) Orderer {
+				return o
+			},
+		},
+		{
+			testName: "when adding an existing consenter",
+			baseOrderer: func(o Orderer) Orderer {
+				consenter4 := o.EtcdRaft.Consenters[0]
+				consenter4.Address.Host = "node-4.example.com"
+				o.EtcdRaft.Consenters = append(o.EtcdRaft.Consenters, consenter4)
+				return o
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+			t.Parallel()
+			gt := NewGomegaWithT(t)
+
+			baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+			baseOrdererConf = tt.baseOrderer(baseOrdererConf)
+			ordererGroup, err := newOrdererGroup(baseOrdererConf)
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			config := &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						OrdererGroupKey: ordererGroup,
+					},
+				},
+			}
+
+			c := New(config)
+
+			ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+			orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+			etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+			etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+			expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 100,
+				"max_message_count": 100,
+				"preferred_max_bytes": 100
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "0s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": null,
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-1.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-4.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 0,
+						"heartbeat_tick": 0,
+						"max_inflight_blocks": 0,
+						"snapshot_interval_size": 0,
+						"tick_interval": ""
+					}
+				},
+				"state": "STATE_NORMAL",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+			consenter := orderer.Consenter{
+				Address: orderer.EtcdAddress{
+					Host: "node-4.example.com",
+					Port: 7050,
+				},
+				ClientTLSCert: etcdRaftCert,
+				ServerTLSCert: etcdRaftCert,
+			}
+
+			err = c.Orderer().AddConsenter(consenter)
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			buf := bytes.Buffer{}
+			err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
+		})
+	}
+}
+
+func TestAddConsenterFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName     string
+		orderer      func(o Orderer) Orderer
+		ordererGroup func(og *cb.ConfigGroup, ord Orderer)
+		consenter    func(c orderer.Consenter) orderer.Consenter
+		expectedErr  string
+	}{
+		{
+			testName: "when retrieving orderer configuration fails",
+			orderer: func(o Orderer) Orderer {
+				return o
+			},
+			ordererGroup: func(og *cb.ConfigGroup, ord Orderer) {
+				_ = setValue(og, consensusTypeValue("foobar", []byte{}, 1), AdminsPolicyKey)
+			},
+			consenter: func(c orderer.Consenter) orderer.Consenter {
+				return c
+			},
+			expectedErr: "config contains unknown consensus type 'foobar'",
+		},
+		{
+			testName: "when consensus type is not etcdraft",
+			orderer: func(o Orderer) Orderer {
+				o.OrdererType = orderer.ConsensusTypeSolo
+				return o
+			},
+			ordererGroup: func(og *cb.ConfigGroup, ord Orderer) {
+			},
+			consenter: func(c orderer.Consenter) orderer.Consenter {
+				return c
+			},
+			expectedErr: "consensus type solo is not etcdraft",
+		},
+		{
+			testName: "when marshaling metadata fails",
+			orderer: func(o Orderer) Orderer {
+				return o
+			},
+			ordererGroup: func(og *cb.ConfigGroup, ord Orderer) {
+			},
+			consenter: func(c orderer.Consenter) orderer.Consenter {
+				c.ClientTLSCert = nil
+				return c
+			},
+			expectedErr: "marshaling etcdraft metadata: client tls cert for consenter node-4.example.com:7050 is required",
+		},
+		{
+			testName: "when the consensus state is invalid",
+			orderer: func(o Orderer) Orderer {
+				return o
+			},
+			ordererGroup: func(og *cb.ConfigGroup, ord Orderer) {
+				ord.State = "bababa"
+				met, _ := marshalEtcdRaftMetadata(ord.EtcdRaft)
+				_ = setValue(og, consensusTypeValue(ord.OrdererType, met, 3), AdminsPolicyKey)
+			},
+			consenter: func(c orderer.Consenter) orderer.Consenter {
+				return c
+			},
+			expectedErr: "unknown consensus state ''",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+			t.Parallel()
+
+			gt := NewGomegaWithT(t)
+
+			baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+			ord := tt.orderer(baseOrdererConf)
+
+			ordererGroup, err := newOrdererGroup(ord)
+			gt.Expect(err).NotTo(HaveOccurred())
+			tt.ordererGroup(ordererGroup, ord)
+
+			etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+			consenter := orderer.Consenter{
+				Address: orderer.EtcdAddress{
+					Host: "node-4.example.com",
+					Port: 7050,
+				},
+				ClientTLSCert: etcdRaftCert,
+				ServerTLSCert: etcdRaftCert,
+			}
+
+			config := &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						OrdererGroupKey: ordererGroup,
+					},
+				},
+			}
+
+			c := New(config)
+
+			err = c.Orderer().AddConsenter(tt.consenter(consenter))
+			gt.Expect(err).To(MatchError(tt.expectedErr))
+		})
+	}
+}
+
+func TestRemoveConsenter(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+	etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+	etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+	expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 100,
+				"max_message_count": 100,
+				"preferred_max_bytes": 100
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "0s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": null,
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 0,
+						"heartbeat_tick": 0,
+						"max_inflight_blocks": 0,
+						"snapshot_interval_size": 0,
+						"tick_interval": ""
+					}
+				},
+				"state": "STATE_NORMAL",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+	consenter := orderer.Consenter{
+		Address: orderer.EtcdAddress{
+			Host: "node-1.example.com",
+			Port: 7050,
+		},
+		ClientTLSCert: etcdRaftCert,
+		ServerTLSCert: etcdRaftCert,
+	}
+
+	err = c.Orderer().RemoveConsenter(consenter)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	buf := bytes.Buffer{}
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
+}
+
+func TestRemoveConsenterFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName     string
+		orderer      func(o Orderer) Orderer
+		ordererGroup func(og *cb.ConfigGroup, ord Orderer)
+		consenter    func(c orderer.Consenter) orderer.Consenter
+		expectedErr  string
+	}{
+		{
+			testName: "when retrieving orderer configuration fails",
+			orderer: func(o Orderer) Orderer {
+				return o
+			},
+			ordererGroup: func(og *cb.ConfigGroup, ord Orderer) {
+				_ = setValue(og, consensusTypeValue("foobar", []byte{}, 1), AdminsPolicyKey)
+			},
+			consenter: func(c orderer.Consenter) orderer.Consenter {
+				return c
+			},
+			expectedErr: "config contains unknown consensus type 'foobar'",
+		},
+		{
+			testName: "when consensus type is not etcdraft",
+			orderer: func(o Orderer) Orderer {
+				o.OrdererType = orderer.ConsensusTypeSolo
+				return o
+			},
+			ordererGroup: func(og *cb.ConfigGroup, ord Orderer) {
+			},
+			consenter: func(c orderer.Consenter) orderer.Consenter {
+				return c
+			},
+			expectedErr: "consensus type solo is not etcdraft",
+		},
+		{
+			testName: "when the consensus state is invalid",
+			orderer: func(o Orderer) Orderer {
+				return o
+			},
+			ordererGroup: func(og *cb.ConfigGroup, ord Orderer) {
+				ord.State = "bababa"
+				met, _ := marshalEtcdRaftMetadata(ord.EtcdRaft)
+				_ = setValue(og, consensusTypeValue(ord.OrdererType, met, 3), AdminsPolicyKey)
+			},
+			consenter: func(c orderer.Consenter) orderer.Consenter {
+				return c
+			},
+			expectedErr: "unknown consensus state ''",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+			t.Parallel()
+
+			gt := NewGomegaWithT(t)
+
+			baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+			ord := tt.orderer(baseOrdererConf)
+
+			ordererGroup, err := newOrdererGroup(ord)
+			gt.Expect(err).NotTo(HaveOccurred())
+			tt.ordererGroup(ordererGroup, ord)
+
+			etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+			consenter := orderer.Consenter{
+				Address: orderer.EtcdAddress{
+					Host: "node-4.example.com",
+					Port: 7050,
+				},
+				ClientTLSCert: etcdRaftCert,
+				ServerTLSCert: etcdRaftCert,
+			}
+
+			config := &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						OrdererGroupKey: ordererGroup,
+					},
+				},
+			}
+
+			c := New(config)
+
+			err = c.Orderer().RemoveConsenter(tt.consenter(consenter))
+			gt.Expect(err).To(MatchError(tt.expectedErr))
+		})
+	}
+}
+
 func TestAddOrdererCapabilityFailures(t *testing.T) {
 	t.Parallel()
 
