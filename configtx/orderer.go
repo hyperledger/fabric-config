@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -239,6 +240,82 @@ func (o *OrdererGroup) RemoveOrganization(name string) {
 func (o *OrdererGroup) SetConfiguration(ord Orderer) error {
 	// update orderer values
 	err := addOrdererValues(o.ordererGroup, ord)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AddConsenter adds a consenter to an etcdraft configuration.
+func (o *OrdererGroup) AddConsenter(consenter orderer.Consenter) error {
+	cfg, err := o.Configuration()
+	if err != nil {
+		return err
+	}
+
+	if cfg.OrdererType != orderer.ConsensusTypeEtcdRaft {
+		return fmt.Errorf("consensus type %s is not etcdraft", cfg.OrdererType)
+	}
+
+	for _, c := range cfg.EtcdRaft.Consenters {
+		if reflect.DeepEqual(c, consenter) {
+			return nil
+		}
+	}
+
+	cfg.EtcdRaft.Consenters = append(cfg.EtcdRaft.Consenters, consenter)
+
+	consensusMetadata, err := marshalEtcdRaftMetadata(cfg.EtcdRaft)
+	if err != nil {
+		return fmt.Errorf("marshaling etcdraft metadata: %v", err)
+	}
+
+	consensusState, ok := ob.ConsensusType_State_value[string(cfg.State)]
+	if !ok {
+		return fmt.Errorf("unknown consensus state '%s'", cfg.State)
+	}
+
+	err = setValue(o.ordererGroup, consensusTypeValue(cfg.OrdererType, consensusMetadata, consensusState), AdminsPolicyKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemoveConsenter removes a consenter from an etcdraft configuration.
+func (o *OrdererGroup) RemoveConsenter(consenter orderer.Consenter) error {
+	cfg, err := o.Configuration()
+	if err != nil {
+		return err
+	}
+
+	if cfg.OrdererType != orderer.ConsensusTypeEtcdRaft {
+		return fmt.Errorf("consensus type %s is not etcdraft", cfg.OrdererType)
+	}
+
+	consenters := cfg.EtcdRaft.Consenters[:]
+	for i, c := range cfg.EtcdRaft.Consenters {
+		if reflect.DeepEqual(c, consenter) {
+			consenters = append(consenters[:i], consenters[i+1:]...)
+			break
+		}
+	}
+
+	cfg.EtcdRaft.Consenters = consenters
+
+	consensusMetadata, err := marshalEtcdRaftMetadata(cfg.EtcdRaft)
+	if err != nil {
+		return fmt.Errorf("marshaling etcdraft metadata: %v", err)
+	}
+
+	consensusState, ok := ob.ConsensusType_State_value[string(cfg.State)]
+	if !ok {
+		return fmt.Errorf("unknown consensus state '%s'", cfg.State)
+	}
+
+	err = setValue(o.ordererGroup, consensusTypeValue(cfg.OrdererType, consensusMetadata, consensusState), AdminsPolicyKey)
 	if err != nil {
 		return err
 	}
