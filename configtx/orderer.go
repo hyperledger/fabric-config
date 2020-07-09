@@ -539,6 +539,12 @@ func (o *OrdererOrg) Policies() (map[string]Policy, error) {
 	return getPolicies(o.orgGroup.Policies)
 }
 
+// RemoveLegacyKafkaBrokers removes the legacy kafka brokers config key and value from config.
+// In fabric 2.0, kafka was deprecated as a consensus type.
+func (o *OrdererGroup) RemoveLegacyKafkaBrokers() {
+	delete(o.ordererGroup.Values, orderer.KafkaBrokersKey)
+}
+
 // newOrdererGroup returns the orderer component of the channel configuration.
 // It defines parameters of the ordering service about how large blocks should be,
 // how frequently they should be emitted, etc. as well as the organizations of the ordering network.

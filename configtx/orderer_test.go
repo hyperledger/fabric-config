@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-config/protolator"
 	"github.com/hyperledger/fabric-config/protolator/protoext/ordererext"
 	cb "github.com/hyperledger/fabric-protos-go/common"
+	ob "github.com/hyperledger/fabric-protos-go/orderer"
 	. "github.com/onsi/gomega"
 )
 
@@ -3926,6 +3927,59 @@ func TestUpdateOrdererMSPFailure(t *testing.T) {
 			gt.Expect(err).To(MatchError(tc.expectedErr))
 		})
 	}
+}
+
+func TestRemoveLegacyKafkaBrokers(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeKafka)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+
+	c := New(config)
+
+	c.Orderer().RemoveLegacyKafkaBrokers()
+
+	expectedConfigValue := map[string]*cb.ConfigValue{
+		orderer.ConsensusTypeKey: {
+			ModPolicy: AdminsPolicyKey,
+			Value: marshalOrPanic(&ob.ConsensusType{
+				Type: orderer.ConsensusTypeKafka,
+			}),
+		},
+		orderer.ChannelRestrictionsKey: {
+			ModPolicy: AdminsPolicyKey,
+		},
+		CapabilitiesKey: {
+			ModPolicy: AdminsPolicyKey,
+			Value: marshalOrPanic(&cb.Capabilities{
+				Capabilities: map[string]*cb.Capability{
+					"V1_3": {},
+				},
+			}),
+		},
+		orderer.BatchTimeoutKey: {
+			ModPolicy: AdminsPolicyKey,
+			Value: marshalOrPanic(&ob.BatchTimeout{
+				Timeout: "0s",
+			}),
+		},
+		orderer.BatchSizeKey: {
+			ModPolicy: AdminsPolicyKey,
+			Value: marshalOrPanic(&ob.BatchSize{
+				MaxMessageCount:   100,
+				AbsoluteMaxBytes:  100,
+				PreferredMaxBytes: 100,
+			}),
+		},
+	}
+
+	gt.Expect(c.Orderer().ordererGroup.Values).To(Equal(expectedConfigValue))
 }
 
 func baseOrdererOfType(t *testing.T, ordererType string) (Orderer, []*ecdsa.PrivateKey) {
