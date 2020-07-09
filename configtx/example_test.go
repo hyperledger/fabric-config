@@ -584,6 +584,28 @@ func ExampleConsortiumOrg_SetMSP() {
 	}
 }
 
+func ExampleOrdererGroup_RemoveLegacyKafkaBrokers() {
+
+	baseConfig := fetchChannelConfig()
+	c := configtx.New(baseConfig)
+	ordererConfig, err := c.Orderer().Configuration()
+	if err != nil {
+		panic(err)
+	}
+	ordererConfig.OrdererType = orderer.ConsensusTypeEtcdRaft
+	ordererConfig.EtcdRaft = orderer.EtcdRaft{
+		Consenters: []orderer.Consenter{
+			{Address: orderer.EtcdAddress{
+				Host: "host1",
+				Port: 7050},
+				ClientTLSCert: generateCert(),
+				ServerTLSCert: generateCert(),
+			},
+		},
+	}
+	c.Orderer().RemoveLegacyKafkaBrokers()
+}
+
 // fetchChannelConfig mocks retrieving the config transaction from the most recent configuration block.
 func fetchChannelConfig() *cb.Config {
 	return &cb.Config{
