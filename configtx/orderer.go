@@ -62,6 +62,16 @@ type OrdererOrg struct {
 	name     string
 }
 
+// EtcdRaftOptionsValue encapsulates the configuration functions used to modify an etcdraft configuration's options.
+type EtcdRaftOptionsValue struct {
+	value *cb.ConfigValue
+}
+
+// BatchSizeValue encapsulates the configuration functions used to modify an orderer configuration's batch size values.
+type BatchSizeValue struct {
+	value *cb.ConfigValue
+}
+
 // Orderer returns the orderer group from the updated config.
 func (c *ConfigTx) Orderer() *OrdererGroup {
 	channelGroup := c.updated.ChannelGroup
@@ -183,6 +193,174 @@ func (o *OrdererGroup) Configuration() (Orderer, error) {
 		Policies:      policies,
 		State:         state,
 	}, nil
+}
+
+// BatchSize returns a BatchSizeValue that can be used to configure an orderer configuration's batch size parameters.
+func (o *OrdererGroup) BatchSize() *BatchSizeValue {
+	return &BatchSizeValue{
+		value: o.ordererGroup.Values[orderer.BatchSizeKey],
+	}
+}
+
+// SetMaxMessageCount sets an orderer configuration's batch size max message count.
+func (b *BatchSizeValue) SetMaxMessageCount(maxMessageCount uint32) error {
+	batchSize := &ob.BatchSize{}
+	err := proto.Unmarshal(b.value.Value, batchSize)
+	if err != nil {
+		return err
+	}
+
+	batchSize.MaxMessageCount = maxMessageCount
+	b.value.Value, err = proto.Marshal(batchSize)
+
+	return err
+}
+
+// SetAbsoluteMaxBytes sets an orderer configuration's batch size max block size.
+func (b *BatchSizeValue) SetAbsoluteMaxBytes(maxBytes uint32) error {
+	batchSize := &ob.BatchSize{}
+	err := proto.Unmarshal(b.value.Value, batchSize)
+	if err != nil {
+		return err
+	}
+
+	batchSize.AbsoluteMaxBytes = maxBytes
+	b.value.Value, err = proto.Marshal(batchSize)
+
+	return err
+}
+
+// SetPreferredMaxBytes sets an orderer configuration's batch size preferred size of blocks.
+func (b *BatchSizeValue) SetPreferredMaxBytes(maxBytes uint32) error {
+	batchSize := &ob.BatchSize{}
+	err := proto.Unmarshal(b.value.Value, batchSize)
+	if err != nil {
+		return err
+	}
+
+	batchSize.PreferredMaxBytes = maxBytes
+	b.value.Value, err = proto.Marshal(batchSize)
+
+	return err
+}
+
+// SetBatchTimeout sets the wait time between transactions.
+func (o *OrdererGroup) SetBatchTimeout(timeout time.Duration) error {
+	return setValue(o.ordererGroup, batchTimeoutValue(timeout.String()), AdminsPolicyKey)
+}
+
+// SetMaxChannels sets the maximum count of channels an orderer supports.
+func (o *OrdererGroup) SetMaxChannels(max int) error {
+	return setValue(o.ordererGroup, channelRestrictionsValue(uint64(max)), AdminsPolicyKey)
+}
+
+// SetEtcdRaftConsensusType sets the orderer consensus type to etcdraft, sets etcdraft metadata, and consensus state.
+func (o *OrdererGroup) SetEtcdRaftConsensusType(consensusMetadata orderer.EtcdRaft, consensusState orderer.ConsensusState) error {
+	consensusMetadataBytes, err := marshalEtcdRaftMetadata(consensusMetadata)
+	if err != nil {
+		return fmt.Errorf("marshaling etcdraft metadata: %v", err)
+	}
+
+	return setValue(o.ordererGroup, consensusTypeValue(orderer.ConsensusTypeEtcdRaft, consensusMetadataBytes, ob.ConsensusType_State_value[string(consensusState)]), AdminsPolicyKey)
+}
+
+// SetConsensusState sets the consensus state.
+func (o *OrdererGroup) SetConsensusState(consensusState orderer.ConsensusState) error {
+	consensusTypeProto := &ob.ConsensusType{}
+	err := unmarshalConfigValueAtKey(o.ordererGroup, orderer.ConsensusTypeKey, consensusTypeProto)
+	if err != nil {
+		return err
+	}
+
+	return setValue(o.ordererGroup, consensusTypeValue(consensusTypeProto.Type, consensusTypeProto.Metadata, ob.ConsensusType_State_value[string(consensusState)]), AdminsPolicyKey)
+}
+
+// EtcdRaftOptions returns an EtcdRaftOptionsValue that can be used to configure an etcdraft configuration's options.
+func (o *OrdererGroup) EtcdRaftOptions() *EtcdRaftOptionsValue {
+	return &EtcdRaftOptionsValue{
+		value: o.ordererGroup.Values[orderer.ConsensusTypeKey],
+	}
+}
+
+func (e *EtcdRaftOptionsValue) etcdRaftConfig(consensusTypeProto *ob.ConsensusType) (orderer.EtcdRaft, error) {
+	err := proto.Unmarshal(e.value.Value, consensusTypeProto)
+	if err != nil {
+		return orderer.EtcdRaft{}, err
+	}
+
+	return unmarshalEtcdRaftMetadata(consensusTypeProto.Metadata)
+}
+
+func (e *EtcdRaftOptionsValue) setEtcdRaftConfig(consensusTypeProto *ob.ConsensusType, etcdRaft orderer.EtcdRaft) error {
+	consensusMetadata, err := marshalEtcdRaftMetadata(etcdRaft)
+	if err != nil {
+		return fmt.Errorf("marshaling etcdraft metadata: %v", err)
+	}
+
+	consensusTypeProto.Metadata = consensusMetadata
+
+	e.value.Value, err = proto.Marshal(consensusTypeProto)
+	return err
+}
+
+// SetTickInterval sets the Etcdraft's tick interval.
+func (e *EtcdRaftOptionsValue) SetTickInterval(interval string) error {
+	consensusTypeProto := &ob.ConsensusType{}
+	etcdRaft, err := e.etcdRaftConfig(consensusTypeProto)
+	if err != nil {
+		return nil
+	}
+
+	etcdRaft.Options.TickInterval = interval
+	return e.setEtcdRaftConfig(consensusTypeProto, etcdRaft)
+}
+
+// SetElectionInterval sets the Etcdraft's election interval.
+func (e *EtcdRaftOptionsValue) SetElectionInterval(interval uint32) error {
+	consensusTypeProto := &ob.ConsensusType{}
+	etcdRaft, err := e.etcdRaftConfig(consensusTypeProto)
+	if err != nil {
+		return nil
+	}
+
+	etcdRaft.Options.ElectionTick = interval
+	return e.setEtcdRaftConfig(consensusTypeProto, etcdRaft)
+}
+
+// SetHeartbeatTick sets the Etcdraft's heartbeat tick interval.
+func (e *EtcdRaftOptionsValue) SetHeartbeatTick(tick uint32) error {
+	consensusTypeProto := &ob.ConsensusType{}
+	etcdRaft, err := e.etcdRaftConfig(consensusTypeProto)
+	if err != nil {
+		return nil
+	}
+
+	etcdRaft.Options.HeartbeatTick = tick
+	return e.setEtcdRaftConfig(consensusTypeProto, etcdRaft)
+}
+
+// SetMaxInflightBlocks sets the Etcdraft's max inflight blocks.
+func (e *EtcdRaftOptionsValue) SetMaxInflightBlocks(maxBlks uint32) error {
+	consensusTypeProto := &ob.ConsensusType{}
+	etcdRaft, err := e.etcdRaftConfig(consensusTypeProto)
+	if err != nil {
+		return nil
+	}
+
+	etcdRaft.Options.MaxInflightBlocks = maxBlks
+	return e.setEtcdRaftConfig(consensusTypeProto, etcdRaft)
+}
+
+// SetSnapshotIntervalSize sets the Etcdraft's snapshot interval size.
+func (e *EtcdRaftOptionsValue) SetSnapshotIntervalSize(intervalSize uint32) error {
+	consensusTypeProto := &ob.ConsensusType{}
+	etcdRaft, err := e.etcdRaftConfig(consensusTypeProto)
+	if err != nil {
+		return nil
+	}
+
+	etcdRaft.Options.SnapshotIntervalSize = intervalSize
+	return e.setEtcdRaftConfig(consensusTypeProto, etcdRaft)
 }
 
 // Configuration retrieves an existing org's configuration from an

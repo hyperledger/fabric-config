@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/configtx/orderer"
@@ -3980,6 +3981,1853 @@ func TestRemoveLegacyKafkaBrokers(t *testing.T) {
 	}
 
 	gt.Expect(c.Orderer().ordererGroup.Values).To(Equal(expectedConfigValue))
+}
+
+func TestSetBatchSizeValues(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+	etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+	etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+	expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 300,
+				"max_message_count": 200,
+				"preferred_max_bytes": 500
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "0s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": null,
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-1.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 0,
+						"heartbeat_tick": 0,
+						"max_inflight_blocks": 0,
+						"snapshot_interval_size": 0,
+						"tick_interval": ""
+					}
+				},
+				"state": "STATE_NORMAL",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+	err = c.Orderer().BatchSize().SetMaxMessageCount(200)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = c.Orderer().BatchSize().SetAbsoluteMaxBytes(300)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = c.Orderer().BatchSize().SetPreferredMaxBytes(500)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	buf := bytes.Buffer{}
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
+}
+
+func TestSetMaxMessageCountFailures(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+	baseOrdererConf, _ := baseSoloOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	ordererGroup.Values[orderer.BatchSizeKey] = &cb.ConfigValue{Value: []byte("{")}
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+	err = c.Orderer().BatchSize().SetMaxMessageCount(5)
+	gt.Expect(err).To(MatchError("unexpected EOF"))
+}
+
+func TestSetAbsoluteMaxBytesFailures(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseSoloOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	ordererGroup.Values[orderer.BatchSizeKey] = &cb.ConfigValue{Value: []byte("{")}
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+	err = c.Orderer().BatchSize().SetAbsoluteMaxBytes(5)
+	gt.Expect(err).To(MatchError("unexpected EOF"))
+}
+
+func TestSetPreferredMaxBytesFailures(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseSoloOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	ordererGroup.Values[orderer.BatchSizeKey] = &cb.ConfigValue{Value: []byte("{")}
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+	err = c.Orderer().BatchSize().SetPreferredMaxBytes(5)
+	gt.Expect(err).To(MatchError("unexpected EOF"))
+}
+
+func TestSetBatchTimeout(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+	etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+	etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+	expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 100,
+				"max_message_count": 100,
+				"preferred_max_bytes": 100
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "20s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": null,
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-1.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 0,
+						"heartbeat_tick": 0,
+						"max_inflight_blocks": 0,
+						"snapshot_interval_size": 0,
+						"tick_interval": ""
+					}
+				},
+				"state": "STATE_NORMAL",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+	err = c.Orderer().SetBatchTimeout(time.Second * 20)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	buf := bytes.Buffer{}
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
+}
+
+func TestSetMaxChannels(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+	etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+	etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+	expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 100,
+				"max_message_count": 100,
+				"preferred_max_bytes": 100
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "0s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": {
+				"max_count": "100"
+			},
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-1.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 0,
+						"heartbeat_tick": 0,
+						"max_inflight_blocks": 0,
+						"snapshot_interval_size": 0,
+						"tick_interval": ""
+					}
+				},
+				"state": "STATE_NORMAL",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+	err = c.Orderer().SetMaxChannels(100)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	buf := bytes.Buffer{}
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
+}
+
+func TestSetConsensusType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName    string
+		ordererType string
+		expectedErr string
+	}{
+		{testName: "when current consensus type is etcdraft", ordererType: orderer.ConsensusTypeEtcdRaft, expectedErr: "config does not contain value for ChannelRestrictions"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+
+			var etcdRaftCertBase64 string
+			baseOrdererConf, _ := baseSoloOrderer(t)
+			if tt.ordererType == orderer.ConsensusTypeEtcdRaft {
+				baseOrdererConf, _ = baseEtcdRaftOrderer(t)
+				etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+				etcdRaftCertBase64 = base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+
+			} else if tt.ordererType == orderer.ConsensusTypeKafka {
+				baseOrdererConf, _ = baseKafkaOrderer(t)
+			}
+
+			ordererGroup, err := newOrdererGroup(baseOrdererConf)
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			config := &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						OrdererGroupKey: ordererGroup,
+					},
+				},
+			}
+
+			c := New(config)
+
+			ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+			orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+			expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 100,
+				"max_message_count": 100,
+				"preferred_max_bytes": 100
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "0s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": null,
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-1.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 0,
+						"heartbeat_tick": 0,
+						"max_inflight_blocks": 0,
+						"snapshot_interval_size": 0,
+						"tick_interval": ""
+					}
+				},
+				"state": "STATE_NORMAL",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+			consensusMetadata := orderer.EtcdRaft{
+				Consenters: baseOrdererConf.EtcdRaft.Consenters,
+			}
+			err = c.Orderer().SetEtcdRaftConsensusType(consensusMetadata, orderer.ConsensusTypeSolo)
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			buf := bytes.Buffer{}
+			err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			gt.Expect(buf.String()).To(MatchJSON(expectedConfigGroupJSON))
+		})
+	}
+}
+
+func TestSetConsensusTypeFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName    string
+		ordererType string
+		expectedErr string
+	}{
+		{testName: "when consensus type is empty", ordererType: "solo", expectedErr: "marshaling etcdraft metadata: consenters are required"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+
+			gt := NewGomegaWithT(t)
+
+			baseOrdererConf, _ := baseSoloOrderer(t)
+			ordererGroup, err := newOrdererGroup(baseOrdererConf)
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			delete(ordererGroup.Values, orderer.ConsensusTypeKey)
+			config := &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						OrdererGroupKey: ordererGroup,
+					},
+				},
+			}
+
+			c := New(config)
+			err = c.Orderer().SetEtcdRaftConsensusType(orderer.EtcdRaft{}, "")
+			gt.Expect(err).To(MatchError(tt.expectedErr))
+		})
+	}
+
+}
+func TestSetConsensusState(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+	etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+	etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+	expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 100,
+				"max_message_count": 100,
+				"preferred_max_bytes": 100
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "0s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": null,
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-1.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 0,
+						"heartbeat_tick": 0,
+						"max_inflight_blocks": 0,
+						"snapshot_interval_size": 0,
+						"tick_interval": ""
+					}
+				},
+				"state": "STATE_MAINTENANCE",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+	err = c.Orderer().SetConsensusState(orderer.ConsensusStateMaintenance)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	buf := bytes.Buffer{}
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
+}
+
+func TestSetConsensusStateFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName    string
+		expectedErr string
+	}{
+		{testName: "when retrieving orderer config fails", expectedErr: "config does not contain value for ConsensusType"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+
+			gt := NewGomegaWithT(t)
+
+			baseOrdererConf, _ := baseSoloOrderer(t)
+			ordererGroup, err := newOrdererGroup(baseOrdererConf)
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			delete(ordererGroup.Values, orderer.ConsensusTypeKey)
+			config := &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						OrdererGroupKey: ordererGroup,
+					},
+				},
+			}
+
+			c := New(config)
+			err = c.Orderer().SetConsensusState("")
+			gt.Expect(err).To(MatchError(tt.expectedErr))
+		})
+	}
+
+}
+
+func TestSetEtcdRaftOptions(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseEtcdRaftOrderer(t)
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				OrdererGroupKey: ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	ordererOrgMSP := baseOrdererConf.Organizations[0].MSP
+	orgCertBase64, orgCRLBase64 := certCRLBase64(t, ordererOrgMSP)
+	etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
+
+	etcdRaftCertBase64 := base64.StdEncoding.EncodeToString(pemEncodeX509Certificate(etcdRaftCert))
+	expectedConfigGroupJSON := fmt.Sprintf(`{
+	"groups": {
+		"OrdererOrg": {
+			"groups": {},
+			"mod_policy": "Admins",
+			"policies": {
+				"Admins": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Admins"
+						}
+					},
+					"version": "0"
+				},
+				"Endorsement": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "MAJORITY",
+							"sub_policy": "Endorsement"
+						}
+					},
+					"version": "0"
+				},
+				"Readers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Readers"
+						}
+					},
+					"version": "0"
+				},
+				"Writers": {
+					"mod_policy": "Admins",
+					"policy": {
+						"type": 3,
+						"value": {
+							"rule": "ANY",
+							"sub_policy": "Writers"
+						}
+					},
+					"version": "0"
+				}
+			},
+			"values": {
+				"Endpoints": {
+					"mod_policy": "Admins",
+					"value": {
+						"addresses": [
+							"localhost:123"
+						]
+					},
+					"version": "0"
+				},
+				"MSP": {
+					"mod_policy": "Admins",
+					"value": {
+						"config": {
+							"admins": [
+								"%[1]s"
+							],
+							"crypto_config": {
+								"identity_identifier_hash_function": "SHA256",
+								"signature_hash_family": "SHA3"
+							},
+							"fabric_node_ous": {
+								"admin_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"client_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"enable": false,
+								"orderer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								},
+								"peer_ou_identifier": {
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							},
+							"intermediate_certs": [
+								"%[1]s"
+							],
+							"name": "MSPID",
+							"organizational_unit_identifiers": [
+								{
+									"certificate": "%[1]s",
+									"organizational_unit_identifier": "OUID"
+								}
+							],
+							"revocation_list": [
+								"%[2]s"
+							],
+							"root_certs": [
+								"%[1]s"
+							],
+							"signing_identity": null,
+							"tls_intermediate_certs": [
+								"%[1]s"
+							],
+							"tls_root_certs": [
+								"%[1]s"
+							]
+						},
+						"type": 0
+					},
+					"version": "0"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"mod_policy": "Admins",
+	"policies": {
+		"Admins": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "MAJORITY",
+					"sub_policy": "Admins"
+				}
+			},
+			"version": "0"
+		},
+		"BlockValidation": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		},
+		"Readers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Readers"
+				}
+			},
+			"version": "0"
+		},
+		"Writers": {
+			"mod_policy": "Admins",
+			"policy": {
+				"type": 3,
+				"value": {
+					"rule": "ANY",
+					"sub_policy": "Writers"
+				}
+			},
+			"version": "0"
+		}
+	},
+	"values": {
+		"BatchSize": {
+			"mod_policy": "Admins",
+			"value": {
+				"absolute_max_bytes": 100,
+				"max_message_count": 100,
+				"preferred_max_bytes": 100
+			},
+			"version": "0"
+		},
+		"BatchTimeout": {
+			"mod_policy": "Admins",
+			"value": {
+				"timeout": "0s"
+			},
+			"version": "0"
+		},
+		"Capabilities": {
+			"mod_policy": "Admins",
+			"value": {
+				"capabilities": {
+					"V1_3": {}
+				}
+			},
+			"version": "0"
+		},
+		"ChannelRestrictions": {
+			"mod_policy": "Admins",
+			"value": null,
+			"version": "0"
+		},
+		"ConsensusType": {
+			"mod_policy": "Admins",
+			"value": {
+				"metadata": {
+					"consenters": [
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-1.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-2.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						},
+						{
+							"client_tls_cert": "%[3]s",
+							"host": "node-3.example.com",
+							"port": 7050,
+							"server_tls_cert": "%[3]s"
+						}
+					],
+					"options": {
+						"election_tick": 10,
+						"heartbeat_tick": 20,
+						"max_inflight_blocks": 5,
+						"snapshot_interval_size": 25,
+						"tick_interval": "200"
+					}
+				},
+				"state": "STATE_NORMAL",
+				"type": "etcdraft"
+			},
+			"version": "0"
+		}
+	},
+	"version": "0"
+}
+`, orgCertBase64, orgCRLBase64, etcdRaftCertBase64)
+
+	err = c.Orderer().EtcdRaftOptions().SetTickInterval("200")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = c.Orderer().EtcdRaftOptions().SetElectionInterval(10)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = c.Orderer().EtcdRaftOptions().SetHeartbeatTick(20)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = c.Orderer().EtcdRaftOptions().SetMaxInflightBlocks(5)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = c.Orderer().EtcdRaftOptions().SetSnapshotIntervalSize(25)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	buf := bytes.Buffer{}
+	err = protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererGroup{ConfigGroup: c.Orderer().ordererGroup})
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
 }
 
 func baseOrdererOfType(t *testing.T, ordererType string) (Orderer, []*ecdsa.PrivateKey) {
