@@ -8,7 +8,6 @@ package configtx
 
 import (
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -60,6 +59,13 @@ type OrdererGroup struct {
 type OrdererOrg struct {
 	orgGroup *cb.ConfigGroup
 	name     string
+}
+
+// MSP returns an OrganizationMSP object that can be used to configure the organization's MSP.
+func (o *OrdererOrg) MSP() *OrganizationMSP {
+	return &OrganizationMSP{
+		configGroup: o.orgGroup,
+	}
 }
 
 // EtcdRaftOptionsValue encapsulates the configuration functions used to modify an etcdraft configuration's options.
@@ -638,16 +644,10 @@ func (o *OrdererGroup) Policies() (map[string]Policy, error) {
 	return getPolicies(o.ordererGroup.Policies)
 }
 
-// MSP returns the MSP value for an orderer organization in the
-// updated config.
-func (o *OrdererOrg) MSP() (MSP, error) {
-	return getMSPConfig(o.orgGroup)
-}
-
 // SetMSP updates the MSP config for the specified orderer org
 // in the updated config.
 func (o *OrdererOrg) SetMSP(updatedMSP MSP) error {
-	currentMSP, err := o.MSP()
+	currentMSP, err := o.MSP().Configuration()
 	if err != nil {
 		return fmt.Errorf("retrieving msp: %v", err)
 	}
@@ -661,37 +661,12 @@ func (o *OrdererOrg) SetMSP(updatedMSP MSP) error {
 		return err
 	}
 
-	err = o.setMSPConfig(updatedMSP)
+	err = updatedMSP.setConfig(o.orgGroup)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (o *OrdererOrg) setMSPConfig(updatedMSP MSP) error {
-	mspConfig, err := newMSPConfig(updatedMSP)
-	if err != nil {
-		return fmt.Errorf("new msp config: %v", err)
-	}
-
-	err = setValue(o.orgGroup, mspValue(mspConfig), AdminsPolicyKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// CreateMSPCRL creates a CRL that revokes the provided certificates
-// for the specified orderer org signed by the provided SigningIdentity.
-func (o *OrdererOrg) CreateMSPCRL(signingIdentity *SigningIdentity, certs ...*x509.Certificate) (*pkix.CertificateList, error) {
-	msp, err := o.MSP()
-	if err != nil {
-		return nil, fmt.Errorf("retrieving orderer msp: %s", err)
-	}
-
-	return msp.newMSPCRL(signingIdentity, certs...)
 }
 
 // SetPolicy sets the specified policy in the orderer org group's config policy map.

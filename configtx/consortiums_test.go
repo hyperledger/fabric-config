@@ -1692,7 +1692,7 @@ func TestConsortiumMSP(t *testing.T) {
 
 	c := New(config)
 
-	msp, err := c.Consortium("Consortium1").Organization("Org1").MSP()
+	msp, err := c.Consortium("Consortium1").Organization("Org1").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(msp).To(Equal(expectedMSP))
 }
@@ -1710,9 +1710,9 @@ func TestSetConsortiumMSP(t *testing.T) {
 	c := New(config)
 
 	consortium1 := c.Consortium("Consortium1")
-	consortiumOrg1MSP, err := consortium1.Organization("Org1").MSP()
+	consortiumOrg1MSP, err := consortium1.Organization("Org1").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
-	consortiumOrg2MSP, err := consortium1.Organization("Org2").MSP()
+	consortiumOrg2MSP, err := consortium1.Organization("Org2").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 	consortiumOrg1CertBase64, consortiumOrg1CRLBase64 := certCRLBase64(t, consortiumOrg1MSP)
 	consortiumOrg2CertBase64, consortiumOrg2CRLBase64 := certCRLBase64(t, consortiumOrg2MSP)
@@ -1733,7 +1733,7 @@ func TestSetConsortiumMSP(t *testing.T) {
 		PrivateKey:  privKey,
 		MSPID:       "MSPID",
 	}
-	newCRL, err := consortium1.Organization("Org1").CreateMSPCRL(signingIdentity, certToRevoke)
+	newCRL, err := consortiumOrg1MSP.CreateMSPCRL(signingIdentity, certToRevoke)
 	gt.Expect(err).NotTo(HaveOccurred())
 	pemNewCRL, err := pemEncodeCRL(newCRL)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -2087,7 +2087,7 @@ func TestSetConsortiumMSPFailure(t *testing.T) {
 			c := New(config)
 
 			consortiumOrg1 := c.Consortium("Consortium1").Organization("Org1")
-			consortiumOrg1MSP, err := consortiumOrg1.MSP()
+			consortiumOrg1MSP, err := consortiumOrg1.MSP().Configuration()
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			consortiumOrg1MSP = tc.mspMod(consortiumOrg1MSP)

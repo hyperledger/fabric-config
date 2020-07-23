@@ -515,7 +515,7 @@ func ExampleApplicationOrg_SetMSP() {
 	c := configtx.New(baseConfig)
 	applicationOrg1 := c.Application().Organization("Org1")
 
-	msp, err := applicationOrg1.MSP()
+	msp, err := applicationOrg1.MSP().Configuration()
 	if err != nil {
 		panic(err)
 	}
@@ -540,7 +540,7 @@ func ExampleOrdererOrg_SetMSP() {
 	c := configtx.New(baseConfig)
 	ordererOrg := c.Orderer().Organization("OrdererOrg")
 
-	msp, err := ordererOrg.MSP()
+	msp, err := ordererOrg.MSP().Configuration()
 	if err != nil {
 		panic(err)
 	}
@@ -566,7 +566,7 @@ func ExampleConsortiumOrg_SetMSP() {
 
 	sampleConsortiumOrg1 := c.Consortium("SampleConsortium").Organization("Org1")
 
-	msp, err := sampleConsortiumOrg1.MSP()
+	msp, err := sampleConsortiumOrg1.MSP().Configuration()
 	if err != nil {
 		panic(err)
 	}
