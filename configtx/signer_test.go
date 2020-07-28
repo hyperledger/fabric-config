@@ -402,3 +402,23 @@ func generateSerialNumber(t *testing.T) *big.Int {
 
 	return serialNumber
 }
+
+// generateCert returns cert.
+func generateCert(t *testing.T, orgName string) *x509.Certificate {
+	serialNumber := generateSerialNumber(t)
+	template := &x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			CommonName:   orgName,
+			Organization: []string{orgName},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  false,
+	}
+	cert, _ := generateCertAndPrivateKey(t, template, template, nil)
+	return cert
+}

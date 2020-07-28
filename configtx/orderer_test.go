@@ -3589,7 +3589,7 @@ func TestOrdererMSP(t *testing.T) {
 
 	c := New(config)
 
-	msp, err := c.Orderer().Organization("OrdererOrg").MSP()
+	msp, err := c.Orderer().Organization("OrdererOrg").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(msp).To(Equal(expectedMSP))
 }
@@ -3606,7 +3606,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 	}
 	c := New(config)
 
-	ordererMSP, err := c.Orderer().Organization("OrdererOrg").MSP()
+	ordererMSP, err := c.Orderer().Organization("OrdererOrg").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	ordererCertBase64, ordererCRLBase64 := certCRLBase64(t, ordererMSP)
@@ -3626,7 +3626,7 @@ func TestUpdateOrdererMSP(t *testing.T) {
 		PrivateKey:  privKeys[0],
 		MSPID:       "MSPID",
 	}
-	newCRL, err := c.Orderer().Organization("OrdererOrg").CreateMSPCRL(signingIdentity, certToRevoke)
+	newCRL, err := ordererMSP.CreateMSPCRL(signingIdentity, certToRevoke)
 	gt.Expect(err).NotTo(HaveOccurred())
 	pemNewCRL, err := pemEncodeCRL(newCRL)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -3920,7 +3920,7 @@ func TestUpdateOrdererMSPFailure(t *testing.T) {
 			}
 			c := New(config)
 
-			ordererMSP, err := c.Orderer().Organization("OrdererOrg").MSP()
+			ordererMSP, err := c.Orderer().Organization("OrdererOrg").MSP().Configuration()
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			ordererMSP = tc.mspMod(ordererMSP)
@@ -5227,6 +5227,7 @@ func TestSetConsensusTypeFailures(t *testing.T) {
 	}
 
 }
+
 func TestSetConsensusState(t *testing.T) {
 	t.Parallel()
 

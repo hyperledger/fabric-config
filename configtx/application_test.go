@@ -205,7 +205,7 @@ func TestNewApplicationGroupFailure(t *testing.T) {
 	}
 }
 
-func TestAddAnchorPeer(t *testing.T) {
+func TestAppOrgAddAnchorPeer(t *testing.T) {
 	t.Parallel()
 
 	gt := NewGomegaWithT(t)
@@ -368,7 +368,7 @@ func TestAddAnchorPeer(t *testing.T) {
 	gt.Expect(proto.Equal(c.updated, expectedUpdatedConfig)).To(BeTrue())
 }
 
-func TestRemoveAnchorPeer(t *testing.T) {
+func TestAppOrgRemoveAnchorPeer(t *testing.T) {
 	t.Parallel()
 
 	gt := NewGomegaWithT(t)
@@ -502,7 +502,7 @@ func TestRemoveAnchorPeer(t *testing.T) {
 	gt.Expect(proto.Equal(c.updated, expectedUpdatedConfig)).To(BeTrue())
 }
 
-func TestRemoveAnchorPeerFailure(t *testing.T) {
+func TestAppOrgRemoveAnchorPeerFailure(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -652,7 +652,7 @@ func TestSetACL(t *testing.T) {
 	}
 }
 
-func TestRemoveACL(t *testing.T) {
+func TestAppOrgRemoveACL(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -1091,7 +1091,7 @@ func TestApplicationCapabilities(t *testing.T) {
 	gt.Expect(applicationCapabilities).To(BeNil())
 }
 
-func TestAddApplicationCapability(t *testing.T) {
+func TestAppOrgAddApplicationCapability(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -1309,7 +1309,7 @@ func TestAddApplicationCapability(t *testing.T) {
 	}
 }
 
-func TestAddApplicationCapabilityFailures(t *testing.T) {
+func TestAppOrgAddApplicationCapabilityFailures(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -1360,7 +1360,7 @@ func TestAddApplicationCapabilityFailures(t *testing.T) {
 	}
 }
 
-func TestRemoveApplicationCapability(t *testing.T) {
+func TestAppOrgRemoveApplicationCapability(t *testing.T) {
 	t.Parallel()
 
 	gt := NewGomegaWithT(t)
@@ -1466,7 +1466,7 @@ func TestRemoveApplicationCapability(t *testing.T) {
 	gt.Expect(buf.String()).To(Equal(expectedConfigGroupJSON))
 }
 
-func TestRemoveApplicationCapabilityFailures(t *testing.T) {
+func TestAppOrgRemoveApplicationCapabilityFailures(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -1572,7 +1572,7 @@ func TestApplicationOrg(t *testing.T) {
 	}
 }
 
-func TestRemoveApplicationOrg(t *testing.T) {
+func TestAppOrgRemoveApplicationOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
@@ -1599,7 +1599,7 @@ func TestRemoveApplicationOrg(t *testing.T) {
 	gt.Expect(c.updated.ChannelGroup.Groups[ApplicationGroupKey].Groups["Org1"]).To(BeNil())
 }
 
-func TestRemoveApplicationOrgPolicy(t *testing.T) {
+func TestAppOrgRemoveApplicationOrgPolicy(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
@@ -1639,7 +1639,7 @@ func TestRemoveApplicationOrgPolicy(t *testing.T) {
 	gt.Expect(actualOrg1Policies).To(Equal(expectedPolicies))
 }
 
-func TestRemoveApplicationOrgPolicyFailures(t *testing.T) {
+func TestAppOrgRemoveApplicationOrgPolicyFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
@@ -1804,7 +1804,7 @@ func TestSetApplicationPolicyFailures(t *testing.T) {
 	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
-func TestRemoveApplicationPolicy(t *testing.T) {
+func TestAppOrgRemoveApplicationPolicy(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
@@ -1846,7 +1846,7 @@ func TestRemoveApplicationPolicy(t *testing.T) {
 	gt.Expect(updatedPolicies).To(Equal(expectedPolicies))
 }
 
-func TestRemoveApplicationPolicyFailures(t *testing.T) {
+func TestAppOrgRemoveApplicationPolicyFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
@@ -1892,7 +1892,7 @@ func TestApplicationMSP(t *testing.T) {
 
 	c := New(config)
 
-	msp, err := c.Application().Organization("Org1").MSP()
+	msp, err := c.Application().Organization("Org1").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(msp).To(Equal(application.Organizations[0].MSP))
 }
@@ -2014,157 +2014,12 @@ func TestSetApplicationMSPFailure(t *testing.T) {
 
 			c := New(config)
 
-			org1MSP, err := c.Application().Organization("Org1").MSP()
+			org1MSP, err := c.Application().Organization("Org1").MSP().Configuration()
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			org1MSP = tc.mspMod(org1MSP)
 			err = c.Application().Organization(tc.orgName).SetMSP(org1MSP)
 			gt.Expect(err).To(MatchError(tc.expectedErr))
-		})
-	}
-}
-
-func TestCreateApplicationMSPCRL(t *testing.T) {
-	t.Parallel()
-	gt := NewGomegaWithT(t)
-
-	channelGroup, privKeys, err := baseApplicationChannelGroup(t)
-	gt.Expect(err).ToNot(HaveOccurred())
-	config := &cb.Config{
-		ChannelGroup: channelGroup,
-	}
-
-	c := New(config)
-
-	org1MSP, err := c.Application().Organization("Org1").MSP()
-	gt.Expect(err).NotTo(HaveOccurred())
-	org1RootCert := org1MSP.RootCerts[0]
-	org1PrivKey := privKeys[0]
-
-	// update org2MSP to include an intemediate cert that is different
-	// from the root cert
-	org2MSP, err := c.Application().Organization("Org2").MSP()
-	gt.Expect(err).NotTo(HaveOccurred())
-	org2Cert := org2MSP.RootCerts[0]
-	org2PrivKey := privKeys[1]
-	org2IntermediateCert, org2IntermediatePrivKey := generateIntermediateCACertAndPrivateKey(t, "org2.example.com", org2Cert, org2PrivKey)
-	org2MSP.IntermediateCerts = append(org2MSP.IntermediateCerts, org2IntermediateCert)
-	err = c.Application().Organization("Org2").SetMSP(org2MSP)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	tests := []struct {
-		spec             string
-		orgName          string
-		caCert           *x509.Certificate
-		caPrivKey        *ecdsa.PrivateKey
-		numCertsToRevoke int
-	}{
-		{
-			spec:             "create CRL using a root cert",
-			orgName:          "Org1",
-			caCert:           org1RootCert,
-			caPrivKey:        org1PrivKey,
-			numCertsToRevoke: 2,
-		},
-		{
-			spec:             "create CRL using an intermediate cert",
-			orgName:          "Org2",
-			caCert:           org2IntermediateCert,
-			caPrivKey:        org2IntermediatePrivKey,
-			numCertsToRevoke: 1,
-		},
-	}
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.spec, func(t *testing.T) {
-			t.Parallel()
-			gt := NewGomegaWithT(t)
-			certsToRevoke := make([]*x509.Certificate, tc.numCertsToRevoke)
-			for i := 0; i < tc.numCertsToRevoke; i++ {
-				certToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, tc.orgName, tc.caCert, tc.caPrivKey)
-				certsToRevoke[i] = certToRevoke
-			}
-			signingIdentity := &SigningIdentity{
-				Certificate: tc.caCert,
-				PrivateKey:  tc.caPrivKey,
-				MSPID:       "MSPID",
-			}
-			crl, err := c.Application().Organization(tc.orgName).CreateMSPCRL(signingIdentity, certsToRevoke...)
-			gt.Expect(err).NotTo(HaveOccurred())
-			err = tc.caCert.CheckCRLSignature(crl)
-			gt.Expect(err).NotTo(HaveOccurred())
-			gt.Expect(crl.TBSCertList.RevokedCertificates).To(HaveLen(tc.numCertsToRevoke))
-			for i := 0; i < tc.numCertsToRevoke; i++ {
-				gt.Expect(crl.TBSCertList.RevokedCertificates[i].SerialNumber).To(Equal(certsToRevoke[i].SerialNumber))
-			}
-		})
-	}
-}
-
-func TestCreateApplicationMSPCRLFailure(t *testing.T) {
-	t.Parallel()
-	gt := NewGomegaWithT(t)
-
-	channelGroup, privKeys, err := baseApplicationChannelGroup(t)
-	gt.Expect(err).ToNot(HaveOccurred())
-	config := &cb.Config{
-		ChannelGroup: channelGroup,
-	}
-
-	c := New(config)
-
-	org1MSP, err := c.Application().Organization("Org1").MSP()
-	gt.Expect(err).NotTo(HaveOccurred())
-	org1Cert := org1MSP.RootCerts[0]
-	org1PrivKey := privKeys[0]
-	org1CertToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org1.example.com", org1Cert, org1PrivKey)
-
-	org2MSP, err := c.Application().Organization("Org2").MSP()
-	gt.Expect(err).NotTo(HaveOccurred())
-	org2Cert := org2MSP.RootCerts[0]
-	org2PrivKey := privKeys[1]
-	org2CertToRevoke, _ := generateCertAndPrivateKeyFromCACert(t, "org2.example.com", org2Cert, org2PrivKey)
-
-	signingIdentity := &SigningIdentity{
-		Certificate: org1Cert,
-		PrivateKey:  org1PrivKey,
-	}
-	tests := []struct {
-		spec            string
-		mspMod          func(MSP) MSP
-		signingIdentity *SigningIdentity
-		certToRevoke    *x509.Certificate
-		orgName         string
-		expectedErr     string
-	}{
-		{
-			spec:    "signing cert is not a root/intermediate cert for msp",
-			orgName: "Org1",
-			signingIdentity: &SigningIdentity{
-				Certificate: org2Cert,
-				PrivateKey:  org2PrivKey,
-			},
-			certToRevoke: org1CertToRevoke,
-			expectedErr:  "signing cert is not a root/intermediate cert for this MSP: MSPID",
-		},
-		{
-			spec:            "certificate not issued by this MSP",
-			orgName:         "Org1",
-			signingIdentity: signingIdentity,
-			certToRevoke:    org2CertToRevoke,
-			expectedErr:     fmt.Sprintf("certificate not issued by this MSP. serial number: %d", org2CertToRevoke.SerialNumber),
-		},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.spec, func(t *testing.T) {
-			t.Parallel()
-			gt := NewGomegaWithT(t)
-
-			newCRL, err := c.Application().Organization(tc.orgName).CreateMSPCRL(tc.signingIdentity, tc.certToRevoke)
-			gt.Expect(err).To(MatchError(tc.expectedErr))
-			gt.Expect(newCRL).To(BeNil())
 		})
 	}
 }
@@ -2181,9 +2036,9 @@ func TestSetApplicationMSP(t *testing.T) {
 
 	c := New(config)
 
-	org1MSP, err := c.Application().Organization("Org1").MSP()
+	org1MSP, err := c.Application().Organization("Org1").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
-	org2MSP, err := c.Application().Organization("Org2").MSP()
+	org2MSP, err := c.Application().Organization("Org2").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
 	org1CertBase64, org1CRLBase64 := certCRLBase64(t, org1MSP)
 	org2CertBase64, org2CRLBase64 := certCRLBase64(t, org2MSP)
@@ -2204,7 +2059,7 @@ func TestSetApplicationMSP(t *testing.T) {
 		PrivateKey:  privKey,
 		MSPID:       "MSPID",
 	}
-	newCRL, err := c.Application().Organization("Org1").CreateMSPCRL(signingIdentity, certToRevoke)
+	newCRL, err := org1MSP.CreateMSPCRL(signingIdentity, certToRevoke)
 	gt.Expect(err).NotTo(HaveOccurred())
 	pemNewCRL, err := pemEncodeCRL(newCRL)
 	gt.Expect(err).NotTo(HaveOccurred())
