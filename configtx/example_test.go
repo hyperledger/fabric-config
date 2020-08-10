@@ -352,6 +352,31 @@ func Example_organizations() {
 	o.RemoveOrganization("OrdererOrg2")
 }
 
+// This example shows updating the individual orderer configuration values.
+func ExampleOrdererGroup_SetConfiguration_individual() {
+	baseConfig := fetchChannelConfig()
+	c := configtx.New(baseConfig)
+	o := c.Orderer()
+
+	err := o.BatchSize().SetMaxMessageCount(500)
+	if err != nil {
+		panic(err)
+	}
+
+	err = o.AddConsenter(orderer.Consenter{Address: orderer.EtcdAddress{Host: "host1", Port: 7050},
+		ClientTLSCert: generateCert(),
+		ServerTLSCert: generateCert(),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = o.EtcdRaftOptions().SetElectionInterval(50)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func ExampleNewSystemChannelGenesisBlock() {
 	channel := configtx.Channel{
 		Consortiums: []configtx.Consortium{
