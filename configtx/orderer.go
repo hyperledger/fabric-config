@@ -30,7 +30,7 @@ const (
 // Orderer configures the ordering service behavior for a channel.
 type Orderer struct {
 	// OrdererType is the type of orderer
-	// Options: `Solo`, `Kafka` or `Raft`
+	// Options: `ConsensusTypeSolo`, `ConsensusTypeKafka` or `ConsensusTypeEtcdRaft`
 	OrdererType string
 	// BatchTimeout is the wait time between transactions.
 	BatchTimeout  time.Duration
