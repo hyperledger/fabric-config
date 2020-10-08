@@ -336,11 +336,16 @@ func (a *ApplicationOrg) RemoveAnchorPeer(anchorPeerToRemove Address) error {
 
 // ACLs returns a map of ACLS for given config application.
 func (a *ApplicationGroup) ACLs() (map[string]string, error) {
+	aclConfigValue, ok := a.applicationGroup.Values[ACLsKey]
+	if !ok {
+		return nil, nil
+	}
+
 	aclProtos := &pb.ACLs{}
 
-	err := unmarshalConfigValueAtKey(a.applicationGroup, ACLsKey, aclProtos)
+	err := proto.Unmarshal(aclConfigValue.Value, aclProtos)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshaling %s: %v", ACLsKey, err)
 	}
 
 	retACLs := map[string]string{}
