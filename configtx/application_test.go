@@ -1033,6 +1033,31 @@ func TestApplicationACLs(t *testing.T) {
 	gt.Expect(applicationACLs).To(Equal(baseApplicationConf.ACLs))
 }
 
+func TestEmptyApplicationACLs(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseApplicationConf, _ := baseApplication(t)
+	baseApplicationConf.ACLs = nil
+	applicationGroup, err := newApplicationGroupTemplate(baseApplicationConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				ApplicationGroupKey: applicationGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	applicationACLs, err := c.Application().ACLs()
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(applicationACLs).To(BeNil())
+}
+
 func TestApplicationACLsFailure(t *testing.T) {
 	t.Parallel()
 
