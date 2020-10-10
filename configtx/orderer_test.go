@@ -3662,6 +3662,110 @@ func TestSetOrdererOrgPolicyFailures(t *testing.T) {
 	gt.Expect(err).To(MatchError("unknown policy type: "))
 }
 
+func TestSetOrdererOrgPolicies(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseSoloOrderer(t)
+	baseOrdererConf.Organizations[0].Policies["TestPolicy_Remove"] = baseOrdererConf.Organizations[0].Policies[ReadersPolicyKey]
+
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				"Orderer": ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		EndorsementPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy_Add1": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Endorsement",
+		},
+		"TestPolicy_Add2": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Endorsement",
+		},
+	}
+
+	ordererOrg := c.Orderer().Organization("OrdererOrg")
+	err = ordererOrg.SetPolicies(AdminsPolicyKey, newPolicies)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	updatedPolicies, err := ordererOrg.Policies()
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(updatedPolicies).To(Equal(newPolicies))
+
+	originalPolicies := c.original.ChannelGroup.Groups[OrdererGroupKey].Groups["OrdererOrg"].Policies
+	gt.Expect(originalPolicies).To(Equal(ordererGroup.Groups["OrdererOrg"].Policies))
+}
+
+func TestSetOrdererOrgPoliciesFailures(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	baseOrdererConf, _ := baseSoloOrderer(t)
+
+	ordererGroup, err := newOrdererGroup(baseOrdererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				"Orderer": ordererGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		EndorsementPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy": {},
+	}
+
+	err = c.Orderer().Organization("OrdererOrg").SetPolicies(AdminsPolicyKey, newPolicies)
+	gt.Expect(err).To(MatchError("unknown policy type: "))
+}
+
 func TestRemoveOrdererOrgPolicy(t *testing.T) {
 	t.Parallel()
 

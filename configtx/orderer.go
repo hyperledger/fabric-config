@@ -686,9 +686,15 @@ func (o *OrdererOrg) SetMSP(updatedMSP MSP) error {
 }
 
 // SetPolicy sets the specified policy in the orderer org group's config policy map.
-// If the policy already exist in current configuration, its value will be overwritten.
+// If the policy already exists in current configuration, its value will be overwritten.
 func (o *OrdererOrg) SetPolicy(modPolicy, policyName string, policy Policy) error {
 	return setPolicy(o.orgGroup, modPolicy, policyName, policy)
+}
+
+// SetPolicies sets the specified policies in the orderer org group's config policy map.
+// If the policies already exist in current configuration, the values will be replaced with new policies.
+func (o *OrdererOrg) SetPolicies(modPolicy string, policies map[string]Policy) error {
+	return setPolicies(o.orgGroup, policies, modPolicy)
 }
 
 // RemovePolicy removes an existing policy from an orderer organization.
