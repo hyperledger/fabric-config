@@ -1804,6 +1804,96 @@ func TestSetApplicationPolicyFailures(t *testing.T) {
 	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
+func TestSetApplicationPolicies(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channelGroup := newConfigGroup()
+	application, _ := baseApplication(t)
+	application.Policies["TestPolicy_Remove"] = application.Policies[ReadersPolicyKey]
+
+	applicationGroup, err := newApplicationGroupTemplate(application)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		"TestPolicy_Add1": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy_Add2": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+	}
+
+	a := c.Application()
+	err = a.SetPolicies(AdminsPolicyKey, newPolicies)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	updatedPolicies, err := a.Policies()
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(updatedPolicies).To(Equal(newPolicies))
+
+	originalPolicies := c.original.ChannelGroup.Groups[ApplicationGroupKey].Policies
+	gt.Expect(originalPolicies).To(Equal(applicationGroup.Policies))
+}
+
+func TestSetApplicationPoliciesFailures(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channelGroup := newConfigGroup()
+	application, _ := baseApplication(t)
+
+	applicationGroup, err := newApplicationGroupTemplate(application)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		"TestPolicy": {},
+	}
+
+	err = c.Application().SetPolicies(AdminsPolicyKey, newPolicies)
+	gt.Expect(err).To(MatchError("failed to set policies: unknown policy type: "))
+}
+
 func TestAppOrgRemoveApplicationPolicy(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
