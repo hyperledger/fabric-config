@@ -240,6 +240,17 @@ func (c *ConsortiumOrg) SetPolicy(name string, policy Policy) error {
 	return nil
 }
 
+// SetPolicies sets the specified policies in the consortium org group's config policy map.
+// If the policies already exist in current configuration, the values will be replaced with new policies.
+func (c *ConsortiumOrg) SetPolicies(policies map[string]Policy) error {
+	err := setPolicies(c.orgGroup, policies, AdminsPolicyKey)
+	if err != nil {
+		return fmt.Errorf("failed to set policies to consortium org '%s': %v", c.name, err)
+	}
+
+	return nil
+}
+
 // RemovePolicy removes an existing policy from a consortium's organization.
 // Removal will panic if either the consortiums group, consortium group, or consortium org group does not exist.
 func (c *ConsortiumOrg) RemovePolicy(name string) {
