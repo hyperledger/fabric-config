@@ -227,6 +227,17 @@ func (a *ApplicationOrg) SetPolicy(modPolicy, policyName string, policy Policy) 
 	return nil
 }
 
+// SetPolicies sets the specified policies in the application org group's config policy map.
+// If the policies already exist in current configuration, the values will be replaced with new policies.
+func (a *ApplicationOrg) SetPolicies(modPolicy string, policies map[string]Policy) error {
+	err := setPolicies(a.orgGroup, policies, modPolicy)
+	if err != nil {
+		return fmt.Errorf("failed to set policies: %v", err)
+	}
+
+	return nil
+}
+
 // RemovePolicy removes an existing policy from an application organization.
 func (a *ApplicationOrg) RemovePolicy(policyName string) error {
 	policies, err := a.Policies()
