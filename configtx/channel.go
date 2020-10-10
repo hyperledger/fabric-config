@@ -89,6 +89,12 @@ func (c *ChannelGroup) SetPolicy(modPolicy, policyName string, policy Policy) er
 	return setPolicy(c.channelGroup, modPolicy, policyName, policy)
 }
 
+// SetPolicies sets the specified policies in the channel group's config policy map.
+// If the policies already exist in current configuration, the values will be replaced with new policies.
+func (c *ChannelGroup) SetPolicies(modPolicy string, policies map[string]Policy) error {
+	return setPolicies(c.channelGroup, policies, modPolicy)
+}
+
 // RemovePolicy removes an existing channel level policy.
 func (c *ChannelGroup) RemovePolicy(policyName string) error {
 	policies, err := c.Policies()
