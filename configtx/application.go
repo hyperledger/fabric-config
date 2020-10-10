@@ -139,7 +139,7 @@ func (a *ApplicationGroup) Capabilities() ([]string, error) {
 }
 
 // AddCapability sets capability to the provided channel config.
-// If the provided capability already exist in current configuration, this action
+// If the provided capability already exists in current configuration, this action
 // will be a no-op.
 func (a *ApplicationGroup) AddCapability(capability string) error {
 	capabilities, err := a.Capabilities()
@@ -177,7 +177,7 @@ func (a *ApplicationGroup) Policies() (map[string]Policy, error) {
 }
 
 // SetPolicy sets the specified policy in the application group's config policy map.
-// If the policy already exist in current configuration, its value will be overwritten.
+// If the policy already exists in current configuration, its value will be overwritten.
 func (a *ApplicationGroup) SetPolicy(modPolicy, policyName string, policy Policy) error {
 	err := setPolicy(a.applicationGroup, modPolicy, policyName, policy)
 	if err != nil {
@@ -211,13 +211,13 @@ func (a *ApplicationGroup) RemovePolicy(policyName string) error {
 }
 
 // Policies returns the map of policies for a specific application org in
-// the updated config..
+// the updated config.
 func (a *ApplicationOrg) Policies() (map[string]Policy, error) {
 	return getPolicies(a.orgGroup.Policies)
 }
 
 // SetPolicy sets the specified policy in the application org group's config policy map.
-// If an Organization policy already exist in current configuration, its value will be overwritten.
+// If an Organization policy already exists in current configuration, its value will be overwritten.
 func (a *ApplicationOrg) SetPolicy(modPolicy, policyName string, policy Policy) error {
 	err := setPolicy(a.orgGroup, modPolicy, policyName, policy)
 	if err != nil {
@@ -374,7 +374,7 @@ func (a *ApplicationGroup) ACLs() (map[string]string, error) {
 }
 
 // SetACLs sets ACLS to an existing channel config application.
-// If an ACL already exist in current configuration, it will be replaced with new ACL.
+// If an ACL already exists in current configuration, it will be replaced with new ACL.
 func (a *ApplicationGroup) SetACLs(acls map[string]string) error {
 	err := setValue(a.applicationGroup, aclValues(acls), AdminsPolicyKey)
 	if err != nil {

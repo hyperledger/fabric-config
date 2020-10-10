@@ -84,7 +84,7 @@ func (c *ChannelGroup) Policies() (map[string]Policy, error) {
 }
 
 // SetPolicy sets the specified policy in the channel group's config policy map.
-// If the policy already exist in current configuration, its value will be overwritten.
+// If the policy already exists in current configuration, its value will be overwritten.
 func (c *ChannelGroup) SetPolicy(modPolicy, policyName string, policy Policy) error {
 	return setPolicy(c.channelGroup, modPolicy, policyName, policy)
 }
@@ -118,7 +118,7 @@ func (c *ChannelGroup) Capabilities() ([]string, error) {
 }
 
 // AddCapability adds capability to the provided channel config.
-// If the provided capability already exist in current configuration, this action
+// If the provided capability already exists in current configuration, this action
 // will be a no-op.
 func (c *ChannelGroup) AddCapability(capability string) error {
 	capabilities, err := c.Capabilities()

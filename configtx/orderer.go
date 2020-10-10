@@ -519,7 +519,7 @@ func (o *OrdererGroup) Capabilities() ([]string, error) {
 }
 
 // AddCapability adds capability to the provided channel config.
-// If the provided capability already exist in current configuration, this action
+// If the provided capability already exists in current configuration, this action
 // will be a no-op.
 func (o *OrdererGroup) AddCapability(capability string) error {
 	capabilities, err := o.Capabilities()
@@ -551,7 +551,7 @@ func (o *OrdererGroup) RemoveCapability(capability string) error {
 }
 
 // SetEndpoint adds an orderer's endpoint to an existing channel config transaction.
-// If the same endpoint already exist in current configuration, this will be a no-op.
+// If the same endpoint already exists in current configuration, this will be a no-op.
 func (o *OrdererOrg) SetEndpoint(endpoint Address) error {
 	ordererAddrProto := &cb.OrdererAddresses{}
 
@@ -613,7 +613,7 @@ func (o *OrdererOrg) RemoveEndpoint(endpoint Address) error {
 }
 
 // SetPolicy sets the specified policy in the orderer group's config policy map.
-// If the policy already exist in current configuration, its value will be overwritten.
+// If the policy already exists in current configuration, its value will be overwritten.
 func (o *OrdererGroup) SetPolicy(modPolicy, policyName string, policy Policy) error {
 	err := setPolicy(o.ordererGroup, modPolicy, policyName, policy)
 	if err != nil {
