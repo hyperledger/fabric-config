@@ -623,6 +623,22 @@ func (o *OrdererGroup) SetPolicy(modPolicy, policyName string, policy Policy) er
 	return nil
 }
 
+// SetPolicies sets the specified policy in the orderer group's config policy map.
+// If the policies already exist in current configuration, the values will be replaced with new policies.
+func (o *OrdererGroup) SetPolicies(modPolicy string, policies map[string]Policy) error {
+
+	if _, ok := policies[BlockValidationPolicyKey]; !ok {
+		return errors.New("BlockValidation policy must be defined")
+	}
+
+	err := setPolicies(o.ordererGroup, policies, modPolicy)
+	if err != nil {
+		return fmt.Errorf("failed to set policies: %v", err)
+	}
+
+	return nil
+}
+
 // RemovePolicy removes an existing orderer policy configuration.
 func (o *OrdererGroup) RemovePolicy(policyName string) error {
 	if policyName == BlockValidationPolicyKey {
