@@ -1578,6 +1578,108 @@ func TestSetConsortiumOrgPolicyFailures(t *testing.T) {
 	}
 }
 
+func TestSetConsortiumOrgPolicies(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	consortiums, _ := baseConsortiums(t)
+	consortiums[0].Organizations[0].Policies["TestPolicy_Remove"] = Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"}
+
+	consortiumsGroup, err := newConsortiumsGroup(consortiums)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				ConsortiumsGroupKey: consortiumsGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		EndorsementPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy_Add1": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy_Add2": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+	}
+
+	consortium1Org1 := c.Consortium("Consortium1").Organization("Org1")
+	err = consortium1Org1.SetPolicies(newPolicies)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	updatedPolicies, err := consortium1Org1.Policies()
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(updatedPolicies).To(Equal(newPolicies))
+}
+
+func TestSetConsortiumOrgPoliciesFailures(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	consortiums, _ := baseConsortiums(t)
+
+	consortiumsGroup, err := newConsortiumsGroup(consortiums)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				ConsortiumsGroupKey: consortiumsGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		EndorsementPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy": {},
+	}
+
+	consortium1Org1 := c.Consortium("Consortium1").Organization("Org1")
+	err = consortium1Org1.SetPolicies(newPolicies)
+	gt.Expect(err).To(MatchError("failed to set policies to consortium org 'Org1': unknown policy type: "))
+}
+
 func TestRemoveConsortiumOrgPolicy(t *testing.T) {
 	t.Parallel()
 

@@ -258,6 +258,89 @@ func TestSetChannelPolicy(t *testing.T) {
 	gt.Expect(baseChannel.Policies["TestPolicy"]).To(BeNil())
 }
 
+func TestSetChannelPolicies(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channel, _, err := baseApplicationChannelGroup(t)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: channel,
+	}
+	basePolicies := standardPolicies()
+	basePolicies["TestPolicy_Remove"] = Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Readers"}
+	err = setPolicies(channel, basePolicies, AdminsPolicyKey)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Admins",
+		},
+		"TestPolicy_Add1": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		"TestPolicy_Add2": {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+	}
+
+	err = c.Channel().SetPolicies(AdminsPolicyKey, newPolicies)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	updatedChannelPolicies, err := c.Channel().Policies()
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(updatedChannelPolicies).To(Equal(newPolicies))
+
+	originalChannel := c.original.ChannelGroup
+	gt.Expect(originalChannel.Policies).To(Equal(config.ChannelGroup.Policies))
+}
+
+func TestSetChannelPoliciesFailures(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channel, _, err := baseApplicationChannelGroup(t)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: channel,
+	}
+	c := New(config)
+
+	newPolicies := map[string]Policy{
+		ReadersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		WritersPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		AdminsPolicyKey: {
+			Type: ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		"TestPolicy": {},
+	}
+
+	err = c.Channel().SetPolicies(AdminsPolicyKey, newPolicies)
+	gt.Expect(err).To(MatchError("unknown policy type: "))
+}
+
 func TestRemoveChannelPolicy(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
