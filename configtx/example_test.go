@@ -268,6 +268,81 @@ func Example_policies() {
 	}
 }
 
+// This example shows the bulk replacement of multiple policies
+// for different config groups.
+func Example_policies2() {
+	baseConfig := fetchChannelConfig()
+	c := configtx.New(baseConfig)
+
+	a := c.Application()
+	newAppPolicies := map[string]configtx.Policy{
+		configtx.ReadersPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		configtx.WritersPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		configtx.AdminsPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		configtx.EndorsementPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		configtx.LifecycleEndorsementPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy1": {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Endorsement",
+		},
+		"TestPolicy2": {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+	}
+	err := a.SetPolicies(configtx.AdminsPolicyKey, newAppPolicies)
+	if err != nil {
+		panic(err)
+	}
+
+	o := c.Orderer()
+	newOrdererPolicies := map[string]configtx.Policy{
+		configtx.ReadersPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "ANY Readers",
+		},
+		configtx.WritersPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		configtx.AdminsPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		configtx.BlockValidationPolicyKey: {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "ANY Writers",
+		},
+		"TestPolicy1": {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Admins",
+		},
+		"TestPolicy2": {
+			Type: configtx.ImplicitMetaPolicyType,
+			Rule: "MAJORITY Writers",
+		},
+	}
+	err = o.SetPolicies(configtx.AdminsPolicyKey, newOrdererPolicies)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // This example shows the addition of an orderer endpoint and the removal of
 // an existing orderer endpoint.
 func Example_ordererEndpoints() {
