@@ -427,3 +427,126 @@ func TestRemoveLegacyOrdererAddresses(t *testing.T) {
 	_, exists := c.Channel().channelGroup.Values[OrdererAddressesKey]
 	gt.Expect(exists).To(BeFalse())
 }
+
+func TestConfigurationFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		testName    string
+		config      *cb.Config
+		expectedErr string
+	}{
+		{
+			testName: "when retrieving existing Consortium",
+			config: &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Values: map[string]*cb.ConfigValue{
+						ConsortiumKey: {
+							Value: []byte("foobar"),
+						},
+					},
+				},
+			},
+			expectedErr: "unmarshaling Consortium: proto: can't skip unknown wire type 6",
+		},
+		{
+			testName: "when retrieving existing orderer group",
+			config: &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						OrdererGroupKey: {},
+					},
+				},
+			},
+			expectedErr: "cannot determine consensus type of orderer",
+		},
+		{
+			testName: "when retrieving existing application group",
+			config: &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						ApplicationGroupKey: {
+							Groups: map[string]*cb.ConfigGroup{
+								"Org1": {
+									Values: map[string]*cb.ConfigValue{
+										"foobar": {
+											Value: []byte("foobar"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: "retrieving application org Org1: config does not contain value for MSP",
+		},
+		{
+			testName: "when retrieving existing consortiums group",
+			config: &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Groups: map[string]*cb.ConfigGroup{
+						ConsortiumsGroupKey: {
+							Groups: map[string]*cb.ConfigGroup{
+								"Consortium1": {
+									Groups: map[string]*cb.ConfigGroup{
+										"Org1": {
+											Values: map[string]*cb.ConfigValue{
+												"foobar": {
+													Value: []byte("foobar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: "failed to retrieve organization Org1 from consortium Consortium1: ",
+		},
+		{
+			testName: "when retrieving existing policies",
+			config: &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Policies: map[string]*cb.ConfigPolicy{
+						AdminsPolicyKey: {
+							Policy: &cb.Policy{
+								Value: []byte("foobar"),
+							},
+						},
+					},
+				},
+			},
+			expectedErr: "unknown policy type: 0",
+		},
+		{
+			testName: "when retrieving existing capabilities",
+			config: &cb.Config{
+				ChannelGroup: &cb.ConfigGroup{
+					Values: map[string]*cb.ConfigValue{
+						CapabilitiesKey: {
+							Value: []byte("foobar"),
+						},
+					},
+				},
+			},
+			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+			t.Parallel()
+
+			gt := NewGomegaWithT(t)
+
+			c := New(tt.config)
+
+			_, err := c.Channel().Configuration()
+			gt.Expect(err).To(MatchError(tt.expectedErr))
+		})
+	}
+}
