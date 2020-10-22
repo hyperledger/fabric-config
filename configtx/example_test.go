@@ -33,7 +33,7 @@ import (
 const (
 	// Arbitrary valid pem encoded x509 certificate from crypto/x509 tests.
 	// The contents of the certifcate don't matter, we just need a valid certificate
-	// to pass marshaling/unmamarshaling.
+	// to pass marshaling/unmarshalling.
 	dummyCert = `-----BEGIN CERTIFICATE-----
 MIIDATCCAemgAwIBAgIRAKQkkrFx1T/dgB/Go/xBM5swDQYJKoZIhvcNAQELBQAw
 EjEQMA4GA1UEChMHQWNtZSBDbzAeFw0xNjA4MTcyMDM2MDdaFw0xNzA4MTcyMDM2
@@ -57,7 +57,7 @@ EhLrEqU=
 
 	// Arbitrary valid pem encoded ec private key.
 	// The contents of the private key don't matter, we just need a valid
-	// EC private key to pass marshaling/unmamarshaling.
+	// EC private key to pass marshaling/unmarshalling.
 	dummyPrivateKey = `-----BEGIN EC PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgDZUgDvKixfLi8cK8
 /TFLY97TDmQV3J2ygPpvuI8jSdihRANCAARRN3xgbPIR83dr27UuDaf2OJezpEJx
@@ -67,7 +67,7 @@ UC3v06+FD8MUNcRAboqt4akehaNNSh7MMZI+HdnsM4RXN2y8NePUQsPL
 
 	// Arbitrary valid pem encoded x509 crl.
 	// The contents of the CRL don't matter, we just need a valid
-	// CRL to pass marshaling/unmamarshaling.
+	// CRL to pass marshaling/unmarshalling.
 	dummyCRL = `-----BEGIN X509 CRL-----
 MIIBYDCBygIBATANBgkqhkiG9w0BAQUFADBDMRMwEQYKCZImiZPyLGQBGRYDY29t
 MRcwFQYKCZImiZPyLGQBGRYHZXhhbXBsZTETMBEGA1UEAxMKRXhhbXBsZSBDQRcN
@@ -556,6 +556,177 @@ func ExampleNewSystemChannelGenesisBlock() {
 
 	channelID := "testSystemChannel"
 	_, err := configtx.NewSystemChannelGenesisBlock(channel, channelID)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ExampleNewApplicationChannelGenesisBlock() {
+	channel := configtx.Channel{
+		Orderer: configtx.Orderer{
+			OrdererType: orderer.ConsensusTypeEtcdRaft,
+			Organizations: []configtx.Organization{
+				{
+					Name: "OrdererMSP",
+					Policies: map[string]configtx.Policy{
+						configtx.ReadersPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('OrdererMSP.member')",
+						},
+						configtx.WritersPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('OrdererMSP.member')",
+						},
+						configtx.AdminsPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('OrdererMSP.admin')",
+						},
+					},
+					OrdererEndpoints: []string{
+						"host1:7050",
+					},
+					MSP: baseMSP(&testing.T{}),
+				},
+			},
+			EtcdRaft: orderer.EtcdRaft{
+				Consenters: []orderer.Consenter{
+					{Address: orderer.EtcdAddress{
+						Host: "host1",
+						Port: 7050},
+						ClientTLSCert: generateCert(),
+						ServerTLSCert: generateCert(),
+					},
+				},
+				Options: orderer.EtcdRaftOptions{
+					TickInterval:         "500ms",
+					ElectionTick:         10,
+					HeartbeatTick:        1,
+					MaxInflightBlocks:    5,
+					SnapshotIntervalSize: 16 * 1024 * 1024,
+				},
+			},
+			Policies: map[string]configtx.Policy{
+				configtx.ReadersPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "ANY Readers",
+				},
+				configtx.WritersPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "ANY Writers",
+				},
+				configtx.AdminsPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "MAJORITY Admins",
+				},
+				configtx.BlockValidationPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "ANY Writers",
+				},
+			},
+			Capabilities: []string{"V2_0"},
+			BatchSize: orderer.BatchSize{
+				MaxMessageCount:   100,
+				AbsoluteMaxBytes:  100,
+				PreferredMaxBytes: 100,
+			},
+			BatchTimeout: 2 * time.Second,
+			State:        orderer.ConsensusStateNormal,
+		},
+		Application: configtx.Application{
+			Organizations: []configtx.Organization{
+				{
+					Name: "Org1MSP",
+					Policies: map[string]configtx.Policy{
+						configtx.ReadersPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org1MSP.admin', 'Org1MSP.peer'," +
+								"'Org1MSP.client')",
+						},
+						configtx.WritersPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org1MSP.admin', 'Org1MSP.client')",
+						},
+						configtx.AdminsPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org1MSP.admin')",
+						},
+						configtx.EndorsementPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org1MSP.peer')",
+						},
+					},
+					MSP: baseMSP(&testing.T{}),
+				},
+				{
+					Name: "Org2MSP",
+					Policies: map[string]configtx.Policy{
+						configtx.ReadersPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org2MSP.admin', 'Org2MSP.peer'," +
+								"'Org2MSP.client')",
+						},
+						configtx.WritersPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org2MSP.admin', 'Org2MSP.client')",
+						},
+						configtx.AdminsPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org2MSP.admin')",
+						},
+						configtx.EndorsementPolicyKey: {
+							Type: configtx.SignaturePolicyType,
+							Rule: "OR('Org2MSP.peer')",
+						},
+					},
+					MSP: baseMSP(&testing.T{}),
+				},
+			},
+			Capabilities: []string{"V2_0"},
+			ACLs: map[string]string{
+				"event/Block": "/Channel/Application/Readers",
+			},
+			Policies: map[string]configtx.Policy{
+				configtx.ReadersPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "ANY Readers",
+				},
+				configtx.WritersPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "ANY Writers",
+				},
+				configtx.AdminsPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "MAJORITY Admins",
+				},
+				configtx.EndorsementPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "MAJORITY Endorsement",
+				},
+				configtx.LifecycleEndorsementPolicyKey: {
+					Type: configtx.ImplicitMetaPolicyType,
+					Rule: "MAJORITY Endorsement",
+				},
+			},
+		},
+		Capabilities: []string{"V2_0"},
+		Policies: map[string]configtx.Policy{
+			configtx.ReadersPolicyKey: {
+				Type: configtx.ImplicitMetaPolicyType,
+				Rule: "ANY Readers",
+			},
+			configtx.WritersPolicyKey: {
+				Type: configtx.ImplicitMetaPolicyType,
+				Rule: "ANY Writers",
+			},
+			configtx.AdminsPolicyKey: {
+				Type: configtx.ImplicitMetaPolicyType,
+				Rule: "MAJORITY Admins",
+			},
+		},
+	}
+
+	channelID := "testchannel"
+	_, err := configtx.NewApplicationChannelGenesisBlock(channel, channelID)
 	if err != nil {
 		panic(err)
 	}
