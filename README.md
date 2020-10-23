@@ -28,3 +28,5 @@ Hyperledger Project source code files are made available under the Apache Licens
 [protobuf]: https://github.com/protocolbuffers/protobuf/
 [rocketchat-image]: https://open.rocket.chat/images/join-chat.svg
 [rocketchat-url]: https://chat.hyperledger.org/channel/fabric
+
+This is a CI test
