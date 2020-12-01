@@ -14,6 +14,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
@@ -872,15 +873,19 @@ func TestRemoveTLSRootCert(t *testing.T) {
 	ordererMSP := c.Orderer().Organization("OrdererOrg").MSP()
 	msp, err := ordererMSP.Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
-	existingCert := msp.TLSRootCerts[0]
 
-	err = ordererMSP.RemoveTLSRootCert(existingCert)
+	newCert, _ := generateCACertAndPrivateKey(t, "ca-org1.example.com")
+
+	err = ordererMSP.AddTLSRootCert(newCert)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	err = ordererMSP.RemoveTLSRootCert(newCert)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	msp, err = c.Orderer().Organization("OrdererOrg").MSP().Configuration()
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(msp.TLSRootCerts).Should(HaveLen(0))
-	gt.Expect(msp.TLSRootCerts).ShouldNot(ContainElement(existingCert))
+	gt.Expect(msp.TLSRootCerts).Should(HaveLen(1))
+	gt.Expect(msp.TLSRootCerts).ShouldNot(ContainElement(newCert))
 }
 
 func TestRemoveTLSRootCertFailure(t *testing.T) {
@@ -901,6 +906,31 @@ func TestRemoveTLSRootCertFailure(t *testing.T) {
 	msp, err := c.Orderer().Organization("OrdererOrg").MSP().Configuration()
 	err = ordererMSP.RemoveTLSRootCert(msp.TLSRootCerts[0])
 	gt.Expect(err).To(MatchError("config does not contain value for MSP"))
+}
+
+func TestRemoveTLSRootCertVerifyFailure(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+	c := New(config)
+
+	ordererMSP := c.Orderer().Organization("OrdererOrg").MSP()
+	msp, err := ordererMSP.Configuration()
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	newCert, _ := generateCACertAndPrivateKey(t, "org1.example.com")
+	newCert.SerialNumber = big.NewInt(7)
+
+	msp.TLSIntermediateCerts = append(msp.TLSIntermediateCerts, newCert)
+
+	err = ordererMSP.RemoveTLSRootCert(msp.TLSRootCerts[0])
+	gt.Expect(err).To(MatchError("x509: certificate signed by unknown authority"))
 }
 
 func TestAddTLSIntermediateCert(t *testing.T) {
