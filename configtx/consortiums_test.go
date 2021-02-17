@@ -1486,6 +1486,56 @@ func TestRemoveConsortiumOrg(t *testing.T) {
 	gt.Expect(c.Consortium("Consortium1").Organization("Org1")).To(BeNil())
 }
 
+func TestSetConsortiumOrgModPolicy(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	consortiums, _ := baseConsortiums(t)
+	consortiumsGroup, err := newConsortiumsGroup(consortiums)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				ConsortiumsGroupKey: consortiumsGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	consortium1Org1 := c.Consortium("Consortium1").Organization("Org1")
+	err = consortium1Org1.SetModPolicy("TestModPolicy")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	updatedModPolicy := consortium1Org1.orgGroup.GetModPolicy()
+	gt.Expect(updatedModPolicy).To(Equal("TestModPolicy"))
+}
+
+func TestSetConsortiumOrgModPolicyFailures(t *testing.T) {
+	t.Parallel()
+
+	gt := NewGomegaWithT(t)
+
+	consortiums, _ := baseConsortiums(t)
+	consortiumsGroup, err := newConsortiumsGroup(consortiums)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: &cb.ConfigGroup{
+			Groups: map[string]*cb.ConfigGroup{
+				ConsortiumsGroupKey: consortiumsGroup,
+			},
+		},
+	}
+
+	c := New(config)
+
+	err = c.Consortium("Consortium1").Organization("Org1").SetModPolicy("")
+	gt.Expect(err).To(MatchError("non empty mod policy is required"))
+}
+
 func TestSetConsortiumOrgPolicy(t *testing.T) {
 	t.Parallel()
 
@@ -1508,24 +1558,29 @@ func TestSetConsortiumOrgPolicy(t *testing.T) {
 
 	expectedPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		EndorsementPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
@@ -1601,28 +1656,34 @@ func TestSetConsortiumOrgPolicies(t *testing.T) {
 
 	newPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		EndorsementPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add1": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add2": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
@@ -1704,20 +1765,24 @@ func TestRemoveConsortiumOrgPolicy(t *testing.T) {
 
 	expectedPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		EndorsementPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
@@ -1751,20 +1816,24 @@ func TestConsortiumOrgPolicies(t *testing.T) {
 
 	expectedPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		EndorsementPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 

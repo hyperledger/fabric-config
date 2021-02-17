@@ -2060,7 +2060,7 @@ func TestChannelConfiguration(t *testing.T) {
 					applicationGroup.Groups[org.Name] = orgGroup
 				}
 				channelGroup.Groups[ApplicationGroupKey] = applicationGroup
-				err = setPolicies(channelGroup, standardPolicies(), AdminsPolicyKey)
+				err = setPolicies(channelGroup, standardPolicies())
 				gt.Expect(err).NotTo(HaveOccurred())
 
 				return &cb.Config{
@@ -2081,6 +2081,7 @@ func TestChannelConfiguration(t *testing.T) {
 					Capabilities: []string{"V2_0"},
 					Policies:     policies,
 					Consortium:   "testconsortium",
+					ModPolicy:    AdminsPolicyKey,
 				}
 				channelGroup, err := newSystemChannelGroup(channel)
 				gt.Expect(err).NotTo(HaveOccurred())
@@ -2150,22 +2151,26 @@ func baseApplicationChannelProfile(t *testing.T) (Channel, []*ecdsa.PrivateKey, 
 		Orderer:      orderer,
 		Capabilities: []string{"V2_0"},
 		Policies:     standardPolicies(),
+		ModPolicy:    AdminsPolicyKey,
 	}, applicationPrivKey, ordererPrivKeys[0]
 }
 
 func standardPolicies() map[string]Policy {
 	return map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 }
@@ -2174,8 +2179,9 @@ func orgStandardPolicies() map[string]Policy {
 	policies := standardPolicies()
 
 	policies[EndorsementPolicyKey] = Policy{
-		Type: ImplicitMetaPolicyType,
-		Rule: "MAJORITY Endorsement",
+		Type:      ImplicitMetaPolicyType,
+		Rule:      "MAJORITY Endorsement",
+		ModPolicy: AdminsPolicyKey,
 	}
 
 	return policies
@@ -2185,8 +2191,9 @@ func applicationOrgStandardPolicies() map[string]Policy {
 	policies := orgStandardPolicies()
 
 	policies[LifecycleEndorsementPolicyKey] = Policy{
-		Type: ImplicitMetaPolicyType,
-		Rule: "MAJORITY Endorsement",
+		Type:      ImplicitMetaPolicyType,
+		Rule:      "MAJORITY Endorsement",
+		ModPolicy: AdminsPolicyKey,
 	}
 
 	return policies
@@ -2196,8 +2203,9 @@ func ordererStandardPolicies() map[string]Policy {
 	policies := standardPolicies()
 
 	policies[BlockValidationPolicyKey] = Policy{
-		Type: ImplicitMetaPolicyType,
-		Rule: "ANY Writers",
+		Type:      ImplicitMetaPolicyType,
+		Rule:      "ANY Writers",
+		ModPolicy: AdminsPolicyKey,
 	}
 
 	return policies
