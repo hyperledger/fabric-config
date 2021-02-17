@@ -20,24 +20,28 @@ func TestPolicies(t *testing.T) {
 
 	expectedPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ALL Member",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ALL Member",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Member",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Member",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Member",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Member",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"SignaturePolicy": {
-			Type: SignaturePolicyType,
-			Rule: "AND('Org1.member', 'Org2.client', OR('Org3.peer', 'Org3.admin'), OUTOF(2, 'Org4.member', 'Org4.peer', 'Org4.admin'))",
+			Type:      SignaturePolicyType,
+			Rule:      "AND('Org1.member', 'Org2.client', OR('Org3.peer', 'Org3.admin'), OUTOF(2, 'Org4.member', 'Org4.peer', 'Org4.admin'))",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 	orgGroup := newConfigGroup()
-	err := setPolicies(orgGroup, expectedPolicies, AdminsPolicyKey)
+	err := setPolicies(orgGroup, expectedPolicies)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	policies, err := getPolicies(orgGroup.Policies)

@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-config/configtx/internal/policydsl"
 	"github.com/hyperledger/fabric-config/protolator"
 	"github.com/hyperledger/fabric-config/protolator/protoext/peerext"
 	cb "github.com/hyperledger/fabric-protos-go/common"
@@ -1559,6 +1560,7 @@ func TestApplicationOrg(t *testing.T) {
 			Policies:      standardPolicies(),
 			Organizations: []Organization{baseApplicationOrg(t)},
 		},
+		ModPolicy: AdminsPolicyKey,
 	}
 	channelGroup, err := newChannelGroup(channel)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -1639,6 +1641,7 @@ func TestAppOrgRemoveApplicationOrgPolicy(t *testing.T) {
 			Type: ImplicitMetaPolicyType,
 			Rule: "MAJORITY Endorsement",
 		}
+		org.ModPolicy = AdminsPolicyKey
 
 		orgGroup, err := newOrgConfigGroup(org)
 		gt.Expect(err).NotTo(HaveOccurred())
@@ -1695,6 +1698,60 @@ func TestAppOrgRemoveApplicationOrgPolicyFailures(t *testing.T) {
 	gt.Expect(err).To(MatchError("unknown policy type: 15"))
 }
 
+func TestSetApplicationOrgModPolicy(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channelGroup := newConfigGroup()
+	applicationGroup := newConfigGroup()
+	application, _ := baseApplication(t)
+
+	for _, org := range application.Organizations {
+		orgGroup, err := newOrgConfigGroup(org)
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		applicationGroup.Groups[org.Name] = orgGroup
+	}
+	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+
+	c := New(config)
+
+	applicationOrg1 := c.Application().Organization("Org1")
+	err := applicationOrg1.SetModPolicy("TestModPolicy")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	actualModPolicy := applicationOrg1.orgGroup.GetModPolicy()
+	gt.Expect(actualModPolicy).To(Equal("TestModPolicy"))
+}
+
+func TestSetApplicationOrgModPolicyFailures(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channelGroup := newConfigGroup()
+	applicationGroup := newConfigGroup()
+	application, _ := baseApplication(t)
+
+	for _, org := range application.Organizations {
+		orgGroup, err := newOrgConfigGroup(org)
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		applicationGroup.Groups[org.Name] = orgGroup
+	}
+	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+
+	c := New(config)
+
+	err := c.Application().Organization("Org1").SetModPolicy("")
+	gt.Expect(err).To(MatchError("non empty mod policy is required"))
+}
+
 func TestSetApplicationOrgPolicy(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
@@ -1722,10 +1779,24 @@ func TestSetApplicationOrgPolicy(t *testing.T) {
 	application.Organizations[0].Policies = applicationOrgStandardPolicies()
 	expectedOrgConfigGroup, _ := newOrgConfigGroup(application.Organizations[0])
 	expectedPolicies := expectedOrgConfigGroup.Policies
-	expectedPolicies["TestPolicy"] = expectedPolicies[EndorsementPolicyKey]
+
+	sp, err := policydsl.FromString("OR('Org1MSP.admin', 'Org1MSP.peer','Org1MSP.client')")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	signaturePolicy, err := proto.Marshal(sp)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	expectedPolicies["TestPolicy"] = &cb.ConfigPolicy{
+		ModPolicy: AdminsPolicyKey,
+		Policy: &cb.Policy{
+			Type:  int32(cb.Policy_SIGNATURE),
+			Value: signaturePolicy,
+		},
+	}
 
 	applicationOrg1 := c.Application().Organization("Org1")
-	err := applicationOrg1.SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
+	err = applicationOrg1.SetPolicy("TestPolicy", Policy{Type: SignaturePolicyType,
+		Rule: "OR('Org1MSP.admin', 'Org1MSP.peer','Org1MSP.client')"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	actualOrg1Policies := applicationOrg1.orgGroup.Policies
@@ -1756,7 +1827,7 @@ func TestSetApplicationOrgPolicyFailures(t *testing.T) {
 
 	c := New(config)
 
-	err := c.Application().Organization("Org1").SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
+	err := c.Application().Organization("Org1").SetPolicy("TestPolicy", Policy{})
 	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
@@ -1788,35 +1859,42 @@ func TestSetApplicationOrgPolicies(t *testing.T) {
 	applicationOrg1 := c.Application().Organization("Org1")
 	policies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		EndorsementPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 		LifecycleEndorsementPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add1": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add2": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
-	err := applicationOrg1.SetPolicies(AdminsPolicyKey, policies)
+	err := applicationOrg1.SetPolicies(policies)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	updatedPolicies, err := applicationOrg1.Policies()
@@ -1874,8 +1952,54 @@ func TestSetApplicationOrgPoliciesFailures(t *testing.T) {
 		"TestPolicy": {},
 	}
 
-	err := c.Application().Organization("Org1").SetPolicies(AdminsPolicyKey, policies)
+	err := c.Application().Organization("Org1").SetPolicies(policies)
 	gt.Expect(err).To(MatchError("failed to set policies: unknown policy type: "))
+}
+
+func TestSetApplicationModPolicy(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channelGroup := newConfigGroup()
+	application, _ := baseApplication(t)
+
+	applicationGroup, err := newApplicationGroupTemplate(application)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+
+	c := New(config)
+
+	a := c.Application()
+	err = a.SetModPolicy("TestModPolicy")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	updatedModPolicy := a.applicationGroup.GetModPolicy()
+	gt.Expect(updatedModPolicy).To(Equal("TestModPolicy"))
+}
+
+func TestSetApplicationModPolicyFailures(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channelGroup := newConfigGroup()
+	application, _ := baseApplication(t)
+
+	applicationGroup, err := newApplicationGroupTemplate(application)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	channelGroup.Groups[ApplicationGroupKey] = applicationGroup
+	config := &cb.Config{
+		ChannelGroup: channelGroup,
+	}
+
+	c := New(config)
+
+	err = c.Application().SetModPolicy("")
+	gt.Expect(err).To(MatchError("non empty mod policy is required"))
 }
 
 func TestSetApplicationPolicy(t *testing.T) {
@@ -1897,25 +2021,29 @@ func TestSetApplicationPolicy(t *testing.T) {
 
 	expectedPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
 	a := c.Application()
-	err = a.SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
+	err = a.SetPolicy("TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "MAJORITY Endorsement"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	updatedPolicies, err := a.Policies()
@@ -1943,7 +2071,7 @@ func TestSetApplicationPolicyFailures(t *testing.T) {
 	expectedPolicies := application.Policies
 	expectedPolicies["TestPolicy"] = expectedPolicies[EndorsementPolicyKey]
 
-	err = c.Application().SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{})
+	err = c.Application().SetPolicy("TestPolicy", Policy{})
 	gt.Expect(err).To(MatchError("failed to set policy 'TestPolicy': unknown policy type: "))
 }
 
@@ -1967,29 +2095,34 @@ func TestSetApplicationPolicies(t *testing.T) {
 
 	newPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add1": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add2": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Endorsement",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Endorsement",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
 	a := c.Application()
-	err = a.SetPolicies(AdminsPolicyKey, newPolicies)
+	err = a.SetPolicies(newPolicies)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	updatedPolicies, err := a.Policies()
@@ -2033,7 +2166,7 @@ func TestSetApplicationPoliciesFailures(t *testing.T) {
 		"TestPolicy": {},
 	}
 
-	err = c.Application().SetPolicies(AdminsPolicyKey, newPolicies)
+	err = c.Application().SetPolicies(newPolicies)
 	gt.Expect(err).To(MatchError("failed to set policies: unknown policy type: "))
 }
 
@@ -2057,16 +2190,19 @@ func TestAppOrgRemoveApplicationPolicy(t *testing.T) {
 
 	expectedPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
@@ -2656,5 +2792,6 @@ func baseApplication(t *testing.T) (Application, []*ecdsa.PrivateKey) {
 		ACLs: map[string]string{
 			"acl1": "hi",
 		},
+		ModPolicy: AdminsPolicyKey,
 	}, []*ecdsa.PrivateKey{org1PrivKey, org2PrivKey}
 }

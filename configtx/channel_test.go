@@ -230,6 +230,42 @@ func TestRemoveChannelCapabilityFailures(t *testing.T) {
 	}
 }
 
+func TestSetChannelModPolicy(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channel, _, err := baseApplicationChannelGroup(t)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: channel,
+	}
+	c := New(config)
+
+	err = c.Channel().SetModPolicy("TestModPolicy")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	updatedChannelModPolicy := c.Channel().channelGroup.GetModPolicy()
+
+	gt.Expect(updatedChannelModPolicy).To(Equal("TestModPolicy"))
+}
+
+func TestSetChannelModPolicFailure(t *testing.T) {
+	t.Parallel()
+	gt := NewGomegaWithT(t)
+
+	channel, _, err := baseApplicationChannelGroup(t)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	config := &cb.Config{
+		ChannelGroup: channel,
+	}
+	c := New(config)
+
+	err = c.Channel().SetModPolicy("")
+	gt.Expect(err).To(MatchError("non empty mod policy is required"))
+}
+
 func TestSetChannelPolicy(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
@@ -243,10 +279,10 @@ func TestSetChannelPolicy(t *testing.T) {
 	c := New(config)
 
 	expectedPolicies := map[string]Policy{
-		"TestPolicy": {Type: ImplicitMetaPolicyType, Rule: "ANY Readers"},
+		"TestPolicy": {Type: ImplicitMetaPolicyType, Rule: "ANY Readers", ModPolicy: AdminsPolicyKey},
 	}
 
-	err = c.Channel().SetPolicy(AdminsPolicyKey, "TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Readers"})
+	err = c.Channel().SetPolicy("TestPolicy", Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Readers"})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	updatedChannelPolicy, err := getPolicies(c.updated.ChannelGroup.Policies)
@@ -270,35 +306,40 @@ func TestSetChannelPolicies(t *testing.T) {
 	}
 	basePolicies := standardPolicies()
 	basePolicies["TestPolicy_Remove"] = Policy{Type: ImplicitMetaPolicyType, Rule: "ANY Readers"}
-	err = setPolicies(channel, basePolicies, AdminsPolicyKey)
+	err = setPolicies(channel, basePolicies)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	c := New(config)
 
 	newPolicies := map[string]Policy{
 		ReadersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		WritersPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		AdminsPolicyKey: {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Admins",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add1": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Readers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Readers",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"TestPolicy_Add2": {
-			Type: ImplicitMetaPolicyType,
-			Rule: "ANY Writers",
+			Type:      ImplicitMetaPolicyType,
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
-	err = c.Channel().SetPolicies(AdminsPolicyKey, newPolicies)
+	err = c.Channel().SetPolicies(newPolicies)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	updatedChannelPolicies, err := c.Channel().Policies()
@@ -337,7 +378,7 @@ func TestSetChannelPoliciesFailures(t *testing.T) {
 		"TestPolicy": {},
 	}
 
-	err = c.Channel().SetPolicies(AdminsPolicyKey, newPolicies)
+	err = c.Channel().SetPolicies(newPolicies)
 	gt.Expect(err).To(MatchError("unknown policy type: "))
 }
 
@@ -352,18 +393,20 @@ func TestRemoveChannelPolicy(t *testing.T) {
 		ChannelGroup: channel,
 	}
 	policies := standardPolicies()
-	err = setPolicies(channel, policies, AdminsPolicyKey)
+	err = setPolicies(channel, policies)
 	gt.Expect(err).NotTo(HaveOccurred())
 	c := New(config)
 
 	expectedPolicies := map[string]Policy{
 		"Admins": {
-			Type: "ImplicitMeta",
-			Rule: "MAJORITY Admins",
+			Type:      "ImplicitMeta",
+			Rule:      "MAJORITY Admins",
+			ModPolicy: AdminsPolicyKey,
 		},
 		"Writers": {
-			Type: "ImplicitMeta",
-			Rule: "ANY Writers",
+			Type:      "ImplicitMeta",
+			Rule:      "ANY Writers",
+			ModPolicy: AdminsPolicyKey,
 		},
 	}
 
@@ -390,7 +433,7 @@ func TestRemoveChannelPolicyFailures(t *testing.T) {
 		ChannelGroup: channel,
 	}
 	policies := standardPolicies()
-	err = setPolicies(channel, policies, AdminsPolicyKey)
+	err = setPolicies(channel, policies)
 	gt.Expect(err).NotTo(HaveOccurred())
 	channel.Policies[ReadersPolicyKey] = &cb.ConfigPolicy{
 		Policy: &cb.Policy{

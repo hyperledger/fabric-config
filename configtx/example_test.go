@@ -220,7 +220,6 @@ func Example_policies() {
 	applicationOrg1 := c.Application().Organization("Org1")
 
 	err := applicationOrg1.SetPolicy(
-		configtx.AdminsPolicyKey,
 		"TestPolicy",
 		configtx.Policy{
 			Type: configtx.ImplicitMetaPolicyType,
@@ -244,7 +243,6 @@ func Example_policies() {
 	}
 
 	err = ordererOrg.SetPolicy(
-		configtx.AdminsPolicyKey,
 		"TestPolicy",
 		configtx.Policy{
 			Type: configtx.ImplicitMetaPolicyType,
@@ -259,7 +257,7 @@ func Example_policies() {
 		panic(err)
 	}
 
-	err = o.SetPolicy(configtx.AdminsPolicyKey, "TestPolicy", configtx.Policy{
+	err = o.SetPolicy("TestPolicy", configtx.Policy{
 		Type: configtx.ImplicitMetaPolicyType,
 		Rule: "MAJORITY Endorsement",
 	})
@@ -305,7 +303,7 @@ func Example_policies2() {
 			Rule: "MAJORITY Admins",
 		},
 	}
-	err := a.SetPolicies(configtx.AdminsPolicyKey, newAppPolicies)
+	err := a.SetPolicies(newAppPolicies)
 	if err != nil {
 		panic(err)
 	}
@@ -337,7 +335,7 @@ func Example_policies2() {
 			Rule: "MAJORITY Writers",
 		},
 	}
-	err = o.SetPolicies(configtx.AdminsPolicyKey, newOrdererPolicies)
+	err = o.SetPolicies(newOrdererPolicies)
 	if err != nil {
 		panic(err)
 	}
