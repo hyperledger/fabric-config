@@ -1268,7 +1268,6 @@ func TestOrdererConfigurationNoOrdererEndpoints(t *testing.T) {
 	c := New(config)
 
 	ordererConf, err := c.Orderer().Configuration()
-	// ordererConf.ModPolicy = AdminsPolicyKey
 	gt.Expect(err).NotTo(HaveOccurred())
 	baseOrdererConf.Organizations[0].OrdererEndpoints = nil
 	gt.Expect(ordererConf).To(Equal(baseOrdererConf))
@@ -1645,8 +1644,10 @@ func TestRemoveOrdererEndpoint(t *testing.T) {
 								EndpointsKey: {
 									ModPolicy: AdminsPolicyKey,
 									Value: marshalOrPanic(&cb.OrdererAddresses{
-										Addresses: []string{"127.0.0.1:7050",
-											"127.0.0.1:8050"},
+										Addresses: []string{
+											"127.0.0.1:7050",
+											"127.0.0.1:8050",
+										},
 									}),
 								},
 							},
@@ -3292,6 +3293,7 @@ func TestSetOrdererModPolicy(t *testing.T) {
 	updatedModPolicy := c.Orderer().ordererGroup.GetModPolicy()
 	gt.Expect(updatedModPolicy).To(Equal("TestModPolicy"))
 }
+
 func TestSetOrdererModPolicyFailures(t *testing.T) {
 	t.Parallel()
 
@@ -5579,7 +5581,6 @@ func TestSetConsensusTypeFailures(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
-
 			gt := NewGomegaWithT(t)
 
 			baseOrdererConf, _ := baseSoloOrderer(t)
@@ -5600,7 +5601,6 @@ func TestSetConsensusTypeFailures(t *testing.T) {
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
-
 }
 
 func TestSetConsensusState(t *testing.T) {
@@ -5893,7 +5893,6 @@ func TestSetConsensusStateFailures(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
-
 			gt := NewGomegaWithT(t)
 
 			baseOrdererConf, _ := baseSoloOrderer(t)
@@ -5914,7 +5913,6 @@ func TestSetConsensusStateFailures(t *testing.T) {
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
-
 }
 
 func TestSetEtcdRaftOptions(t *testing.T) {

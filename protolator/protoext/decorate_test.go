@@ -52,7 +52,8 @@ func TestDecorate(t *testing.T) {
 			msg: &common.BlockData{
 				Data: [][]byte{
 					[]byte("data-bytes"),
-				}},
+				},
+			},
 			expectedReturn: &commonext.BlockData{
 				BlockData: &common.BlockData{
 					Data: [][]byte{

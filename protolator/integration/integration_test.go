@@ -37,15 +37,10 @@ func bidirectionalMarshal(t *testing.T, doc proto.Message) {
 	// So instead we re-marshal to JSON which is a deterministic marshaling
 	// and compare equality there instead
 
-	//t.Log(doc)
-	//t.Log(newRoot)
-
 	var remarshaled bytes.Buffer
 	err = protolator.DeepMarshalJSON(&remarshaled, newRoot)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(remarshaled.String()).To(Equal(buffer.String()))
-	//t.Log(buffer.String())
-	//t.Log(remarshaled.String())
+	gt.Expect(remarshaled.String()).To(MatchJSON(buffer.String()))
 }
 
 func TestConfigUpdate(t *testing.T) {

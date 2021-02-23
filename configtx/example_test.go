@@ -87,9 +87,10 @@ func Example_basic() {
 	baseConfig := fetchSystemChannelConfig()
 	c := configtx.New(baseConfig)
 
-	err := c.Consortium("SampleConsortium").SetChannelCreationPolicy(
-		configtx.Policy{Type: configtx.ImplicitMetaPolicyType,
-			Rule: "MAJORITY Admins"})
+	err := c.Consortium("SampleConsortium").SetChannelCreationPolicy(configtx.Policy{
+		Type: configtx.ImplicitMetaPolicyType,
+		Rule: "MAJORITY Admins",
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -156,7 +157,6 @@ func ExampleOrdererGroup_SetConfiguration() {
 	if err != nil {
 		panic(nil)
 	}
-
 }
 
 // This example shows the addition and removal of ACLs.
@@ -436,7 +436,8 @@ func ExampleOrdererGroup_SetConfiguration_individual() {
 		panic(err)
 	}
 
-	err = o.AddConsenter(orderer.Consenter{Address: orderer.EtcdAddress{Host: "host1", Port: 7050},
+	err = o.AddConsenter(orderer.Consenter{
+		Address:       orderer.EtcdAddress{Host: "host1", Port: 7050},
 		ClientTLSCert: generateCert(),
 		ServerTLSCert: generateCert(),
 	})
@@ -588,9 +589,11 @@ func ExampleNewApplicationChannelGenesisBlock() {
 			},
 			EtcdRaft: orderer.EtcdRaft{
 				Consenters: []orderer.Consenter{
-					{Address: orderer.EtcdAddress{
-						Host: "host1",
-						Port: 7050},
+					{
+						Address: orderer.EtcdAddress{
+							Host: "host1",
+							Port: 7050,
+						},
 						ClientTLSCert: generateCert(),
 						ServerTLSCert: generateCert(),
 					},
@@ -854,7 +857,6 @@ func ExampleConsortiumOrg_SetMSP() {
 }
 
 func ExampleOrdererGroup_RemoveLegacyKafkaBrokers() {
-
 	baseConfig := fetchChannelConfig()
 	c := configtx.New(baseConfig)
 	ordererConfig, err := c.Orderer().Configuration()
@@ -864,9 +866,11 @@ func ExampleOrdererGroup_RemoveLegacyKafkaBrokers() {
 	ordererConfig.OrdererType = orderer.ConsensusTypeEtcdRaft
 	ordererConfig.EtcdRaft = orderer.EtcdRaft{
 		Consenters: []orderer.Consenter{
-			{Address: orderer.EtcdAddress{
-				Host: "host1",
-				Port: 7050},
+			{
+				Address: orderer.EtcdAddress{
+					Host: "host1",
+					Port: 7050,
+				},
 				ClientTLSCert: generateCert(),
 				ServerTLSCert: generateCert(),
 			},
@@ -1167,7 +1171,6 @@ func createSigningIdentity() configtx.SigningIdentity {
 func generateCert() *x509.Certificate {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-
 	if err != nil {
 		log.Fatalf("Failed to generate serial number: %s", err)
 	}
