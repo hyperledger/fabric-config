@@ -11,20 +11,28 @@ trigger:
       - release-*
 
 variables:
-  GOPATH: $(Agent.BuildDirectory)/go
   branch: $[ coalesce(variables['system.PullRequest.TargetBranch'], variables['build.SourceBranchName']) ]
+  GO_VERSION: 1.15.8
+  PATH: $(Agent.BuildDirectory)/go/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
 pool:
-  vmImage: ubuntu-18.04
-container:
-  image: sykesm/fabric-chaincode-go:0.2
+  vmImage: ubuntu-20.04
 
 steps:
+  - task: GoTool@0
+    inputs:
+      version: $(GO_VERSION)
+      goBin: $(Agent.BuildDirectory)/go/bin
+    displayName: Install Go
+
   - checkout: self
+    path: 'fabric-config'
     clean: true
     fetchDepth: 1
-    path: 'go/src/github.com/hyperledger/fabric-config'
     displayName: Checkout Fabric Code
+
+  - script: ci/install-tools.sh
+    displayName: Install Tools
 
   - script: ci/lint.sh
     displayName: Vet and lint
