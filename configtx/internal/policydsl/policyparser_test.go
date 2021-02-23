@@ -27,11 +27,13 @@ func TestOutOf1(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -52,11 +54,13 @@ func TestOutOf2(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -77,11 +81,13 @@ func TestAnd(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -102,11 +108,13 @@ func TestAndClientPeerOrderer(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_CLIENT, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_CLIENT, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_PEER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_PEER, MspIdentifier: "B"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -127,11 +135,13 @@ func TestOr(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -152,15 +162,18 @@ func TestComplex1(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "C"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "C"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -181,19 +194,23 @@ func TestComplex2(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_ADMIN, MspIdentifier: "C"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_ADMIN, MspIdentifier: "C"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "D"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "D"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -214,15 +231,18 @@ func TestMSPIDWIthSpecialChars(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "MSP"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "MSP"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "MSP.WITH.DOTS"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "MSP.WITH.DOTS"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "MSP-WITH-DASHES"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "MSP-WITH-DASHES"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -256,19 +276,23 @@ func TestNodeOUs(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_PEER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_PEER, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_ADMIN, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_ADMIN, MspIdentifier: "B"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_ORDERER, MspIdentifier: "C"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_ORDERER, MspIdentifier: "C"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_CLIENT, MspIdentifier: "D"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_CLIENT, MspIdentifier: "D"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -289,11 +313,13 @@ func TestOutOfNumIsString(t *testing.T) {
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 
 	p2 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
@@ -418,10 +444,12 @@ func TestSecondPassBoundaryCheck(t *testing.T) {
 	principals := make([]*mb.MSPPrincipal, 0)
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "A"}),
+	})
 	principals = append(principals, &mb.MSPPrincipal{
 		PrincipalClassification: mb.MSPPrincipal_ROLE,
-		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"})})
+		Principal:               protoMarshalOrPanic(&mb.MSPRole{Role: mb.MSPRole_MEMBER, MspIdentifier: "B"}),
+	})
 	expected1 := &cb.SignaturePolicyEnvelope{
 		Version:    0,
 		Rule:       policydsl.NOutOf(0, []*cb.SignaturePolicy{policydsl.SignedBy(0), policydsl.SignedBy(1)}),

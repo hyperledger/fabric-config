@@ -639,7 +639,6 @@ func (o *OrdererGroup) SetPolicy(policyName string, policy Policy) error {
 // SetPolicies sets the specified policy in the orderer group's config policy map.
 // If the policies already exist in current configuration, the values will be replaced with new policies.
 func (o *OrdererGroup) SetPolicies(policies map[string]Policy) error {
-
 	if _, ok := policies[BlockValidationPolicyKey]; !ok {
 		return errors.New("BlockValidation policy must be defined")
 	}

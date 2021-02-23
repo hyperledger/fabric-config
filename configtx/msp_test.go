@@ -516,7 +516,6 @@ func TestAddRootCertFailure(t *testing.T) {
 	msp, err := c.Orderer().Organization("OrdererOrg").MSP().Configuration()
 	err = ordererMSP.AddRootCert(msp.RootCerts[0])
 	gt.Expect(err).To(MatchError("config does not contain value for MSP"))
-
 }
 
 func TestRemoveRootCert(t *testing.T) {
@@ -1440,5 +1439,4 @@ func certCRLBase64(t *testing.T, msp MSP) (string, string) {
 	crlBase64 := base64.StdEncoding.EncodeToString(pemCRLBytes[0])
 
 	return certBase64, crlBase64
-
 }

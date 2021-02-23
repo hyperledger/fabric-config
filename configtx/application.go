@@ -87,7 +87,6 @@ func (a *ApplicationGroup) Configuration() (Application, error) {
 	var applicationOrgs []Organization
 	for orgName := range a.applicationGroup.Groups {
 		orgConfig, err := a.Organization(orgName).Configuration()
-
 		if err != nil {
 			return Application{}, fmt.Errorf("retrieving application org %s: %v", orgName, err)
 		}

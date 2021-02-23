@@ -1795,8 +1795,10 @@ func TestSetApplicationOrgPolicy(t *testing.T) {
 	}
 
 	applicationOrg1 := c.Application().Organization("Org1")
-	err = applicationOrg1.SetPolicy("TestPolicy", Policy{Type: SignaturePolicyType,
-		Rule: "OR('Org1MSP.admin', 'Org1MSP.peer','Org1MSP.client')"})
+	err = applicationOrg1.SetPolicy("TestPolicy", Policy{
+		Type: SignaturePolicyType,
+		Rule: "OR('Org1MSP.admin', 'Org1MSP.peer','Org1MSP.client')",
+	})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	actualOrg1Policies := applicationOrg1.orgGroup.Policies
