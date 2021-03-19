@@ -6,7 +6,7 @@ repository:
   name: fabric-config
   description: Hyperledger Fabric Packages for channel configuration transactions
   homepage: https://wiki.hyperledger.org/display/fabric
-  default_branch: master
+  default_branch: main
   has_downloads: false
   has_issues: false
   has_projects: false
