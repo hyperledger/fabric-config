@@ -110,7 +110,7 @@ func TestSetChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto",
 		},
 	}
 
@@ -124,7 +124,7 @@ func TestSetChannelCapabilityFailures(t *testing.T) {
 			c := New(tt.config)
 
 			err := c.Channel().AddCapability(tt.capability)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }
@@ -211,7 +211,7 @@ func TestRemoveChannelCapabilityFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto",
 		},
 	}
 
@@ -225,7 +225,7 @@ func TestRemoveChannelCapabilityFailures(t *testing.T) {
 			c := New(tt.config)
 
 			err := c.Channel().RemoveCapability(tt.capability)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }
@@ -490,7 +490,7 @@ func TestConfigurationFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "unmarshaling Consortium: proto: can't skip unknown wire type 6",
+			expectedErr: "unmarshaling Consortium: proto:",
 		},
 		{
 			testName: "when retrieving existing orderer group",
@@ -575,7 +575,7 @@ func TestConfigurationFailures(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving channel capabilities: unmarshaling capabilities: proto",
 		},
 	}
 
@@ -589,7 +589,7 @@ func TestConfigurationFailures(t *testing.T) {
 			c := New(tt.config)
 
 			_, err := c.Channel().Configuration()
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }

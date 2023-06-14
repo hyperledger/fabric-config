@@ -1751,7 +1751,8 @@ func TestRemoveOrdererEndpointFailure(t *testing.T) {
 	c := New(config)
 
 	err := c.Orderer().Organization("OrdererOrg").RemoveEndpoint(Address{Host: "127.0.0.1", Port: 8050})
-	gt.Expect(err).To(MatchError("failed unmarshaling endpoints for orderer org OrdererOrg: proto: can't skip unknown wire type 6"))
+	gt.Expect(err.Error()).To(ContainSubstring("failed unmarshaling endpoints for orderer org OrdererOrg: proto:"))
+	gt.Expect(err.Error()).To(ContainSubstring("cannot parse invalid wire-format data"))
 }
 
 func TestGetOrdererOrg(t *testing.T) {
@@ -2868,7 +2869,7 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving orderer capabilities: unmarshaling capabilities: proto",
 		},
 	}
 
@@ -2895,7 +2896,7 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 			c := New(config)
 
 			err = c.Orderer().AddCapability(tt.capability)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }
@@ -3172,7 +3173,7 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving orderer capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving orderer capabilities: unmarshaling capabilities: proto",
 		},
 	}
 
@@ -3199,7 +3200,7 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 			c := New(config)
 
 			err = c.Orderer().RemoveCapability(tt.capability)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }
@@ -4661,8 +4662,9 @@ func TestSetMaxMessageCountFailures(t *testing.T) {
 	}
 
 	c := New(config)
+
 	err = c.Orderer().BatchSize().SetMaxMessageCount(5)
-	gt.Expect(err).To(MatchError("unexpected EOF"))
+	gt.Expect(err.Error()).To(ContainSubstring("cannot parse invalid wire-format data"))
 }
 
 func TestSetAbsoluteMaxBytesFailures(t *testing.T) {
@@ -4685,7 +4687,7 @@ func TestSetAbsoluteMaxBytesFailures(t *testing.T) {
 
 	c := New(config)
 	err = c.Orderer().BatchSize().SetAbsoluteMaxBytes(5)
-	gt.Expect(err).To(MatchError("unexpected EOF"))
+	gt.Expect(err.Error()).To(ContainSubstring("cannot parse invalid wire-format data"))
 }
 
 func TestSetPreferredMaxBytesFailures(t *testing.T) {
@@ -4708,7 +4710,7 @@ func TestSetPreferredMaxBytesFailures(t *testing.T) {
 
 	c := New(config)
 	err = c.Orderer().BatchSize().SetPreferredMaxBytes(5)
-	gt.Expect(err).To(MatchError("unexpected EOF"))
+	gt.Expect(err.Error()).To(ContainSubstring("cannot parse invalid wire-format data"))
 }
 
 func TestSetBatchTimeout(t *testing.T) {

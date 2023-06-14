@@ -48,7 +48,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 				badCert := &x509.Certificate{}
 				msp.RootCerts = append(msp.RootCerts, badCert)
 			},
-			expectedErr: "parsing root certs: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing root certs: x509: malformed certificate",
 		},
 		{
 			name:    "Bad intermediate cert",
@@ -57,7 +57,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.IntermediateCerts = append(msp.IntermediateCerts, badCert)
 			},
-			expectedErr: "parsing intermediate certs: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing intermediate certs: x509: malformed certificate",
 		},
 		{
 			name:    "Bad admin cert",
@@ -66,7 +66,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.Admins = append(msp.Admins, badCert)
 			},
-			expectedErr: "parsing admin certs: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing admin certs: x509: malformed certificate",
 		},
 		{
 			name:    "Bad OU Identifier cert",
@@ -75,7 +75,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.OrganizationalUnitIdentifiers[0].Certificate = badCert
 			},
-			expectedErr: "parsing ou identifiers: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing ou identifiers: x509: malformed certificate",
 		},
 		{
 			name:    "Bad tls root cert",
@@ -84,7 +84,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.TLSRootCerts = append(msp.TLSRootCerts, badCert)
 			},
-			expectedErr: "parsing tls root certs: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing tls root certs: x509: malformed certificate",
 		},
 		{
 			name:    "Bad tls intermediate cert",
@@ -93,7 +93,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.TLSIntermediateCerts = append(msp.TLSIntermediateCerts, badCert)
 			},
-			expectedErr: "parsing tls intermediate certs: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing tls intermediate certs: x509: malformed certificate",
 		},
 		{
 			name:    "Bad Client OU Identifier cert",
@@ -102,7 +102,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.NodeOUs.ClientOUIdentifier.Certificate = badCert
 			},
-			expectedErr: "parsing client ou identifier cert: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing client ou identifier cert: x509: malformed certificate",
 		},
 		{
 			name:    "Bad Peer OU Identifier cert",
@@ -111,7 +111,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.NodeOUs.PeerOUIdentifier.Certificate = badCert
 			},
-			expectedErr: "parsing peer ou identifier cert: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing peer ou identifier cert: x509: malformed certificate",
 		},
 		{
 			name:    "Bad Admin OU Identifier cert",
@@ -120,7 +120,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.NodeOUs.AdminOUIdentifier.Certificate = badCert
 			},
-			expectedErr: "parsing admin ou identifier cert: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing admin ou identifier cert: x509: malformed certificate",
 		},
 		{
 			name:    "Bad Orderer OU Identifier cert",
@@ -129,7 +129,7 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			mspMod: func(msp *MSP) {
 				msp.NodeOUs.OrdererOUIdentifier.Certificate = badCert
 			},
-			expectedErr: "parsing orderer ou identifier cert: asn1: syntax error: sequence truncated",
+			expectedErr: "parsing orderer ou identifier cert: x509: malformed certificate",
 		},
 	}
 

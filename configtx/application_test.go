@@ -518,7 +518,7 @@ func TestAppOrgRemoveAnchorPeerFailure(t *testing.T) {
 			orgName:            "Org1",
 			anchorPeerToRemove: Address{Host: "host1", Port: 123},
 			configValues:       map[string]*cb.ConfigValue{AnchorPeersKey: {Value: []byte("a little fire")}},
-			expectedErr:        "failed unmarshaling anchor peer endpoints for application org Org1: proto: can't skip unknown wire type 6",
+			expectedErr:        "failed unmarshaling anchor peer endpoints for application org Org1: proto",
 		},
 	}
 
@@ -547,7 +547,7 @@ func TestAppOrgRemoveAnchorPeerFailure(t *testing.T) {
 			c := New(config)
 
 			err = c.Application().Organization(tt.orgName).RemoveAnchorPeer(tt.anchorPeerToRemove)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }
@@ -1083,7 +1083,8 @@ func TestApplicationACLsFailure(t *testing.T) {
 	c := New(config)
 
 	applicationACLs, err := c.Application().ACLs()
-	gt.Expect(err).To(MatchError("unmarshaling ACLs: unexpected EOF"))
+	gt.Expect(err.Error()).To(ContainSubstring("unmarshaling ACLs: proto:"))
+	gt.Expect(err.Error()).To(ContainSubstring("cannot parse invalid wire-format data"))
 	gt.Expect(applicationACLs).To(BeNil())
 }
 
@@ -1354,7 +1355,7 @@ func TestAppOrgAddApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving application capabilities: unmarshaling capabilities: proto",
 		},
 	}
 
@@ -1381,7 +1382,7 @@ func TestAppOrgAddApplicationCapabilityFailures(t *testing.T) {
 			c := New(config)
 
 			err = c.Application().AddCapability(tt.capability)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }
@@ -1518,7 +1519,7 @@ func TestAppOrgRemoveApplicationCapabilityFailures(t *testing.T) {
 					},
 				}
 			},
-			expectedErr: "retrieving application capabilities: unmarshaling capabilities: proto: can't skip unknown wire type 6",
+			expectedErr: "retrieving application capabilities: unmarshaling capabilities: proto",
 		},
 	}
 
@@ -1545,7 +1546,7 @@ func TestAppOrgRemoveApplicationCapabilityFailures(t *testing.T) {
 			c := New(config)
 
 			err = c.Application().RemoveCapability(tt.capability)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tt.expectedErr))
 		})
 	}
 }
