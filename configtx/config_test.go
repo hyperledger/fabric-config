@@ -1914,7 +1914,7 @@ func TestNewEnvelopeFailures(t *testing.T) {
 		{
 			spec:            "when the marshaled config update isn't a config update",
 			marshaledUpdate: []byte("not-a-config-update"),
-			expectedErr:     "unmarshaling config update: proto: can't skip unknown wire type 6",
+			expectedErr:     "unmarshaling config update: proto",
 		},
 	}
 
@@ -1925,7 +1925,7 @@ func TestNewEnvelopeFailures(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			env, err := NewEnvelope(tc.marshaledUpdate)
-			gt.Expect(err).To(MatchError(tc.expectedErr))
+			gt.Expect(err.Error()).To(ContainSubstring(tc.expectedErr))
 			gt.Expect(env).To(BeNil())
 		})
 	}

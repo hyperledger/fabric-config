@@ -47,7 +47,8 @@ func TestCommonProtolator(t *testing.T) {
 	}
 	msg, err = payload.VariablyOpaqueFieldProto("data")
 	gt.Expect(msg).To(BeNil())
-	gt.Expect(err).To(MatchError("corrupt channel header: unexpected EOF"))
+	gt.Expect(err.Error()).To(ContainSubstring("corrupt channel header: proto:"))
+	gt.Expect(err.Error()).To(ContainSubstring("cannot parse invalid wire-format data"))
 
 	ch := &common.ChannelHeader{
 		Type: int32(common.HeaderType_CONFIG),
