@@ -816,10 +816,7 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 	switch o.OrdererType {
 	case orderer.ConsensusTypeSolo:
 	case orderer.ConsensusTypeKafka:
-		err = setValue(ordererGroup, kafkaBrokersValue(o.Kafka.Brokers), AdminsPolicyKey)
-		if err != nil {
-			return err
-		}
+		return fmt.Errorf("the kafka consensus type is no longer supported")
 	case orderer.ConsensusTypeEtcdRaft:
 		if consensusMetadata, err = marshalEtcdRaftMetadata(o.EtcdRaft); err != nil {
 			return fmt.Errorf("marshaling etcdraft metadata for orderer type '%s': %v", orderer.ConsensusTypeEtcdRaft, err)
@@ -902,6 +899,7 @@ func channelRestrictionsValue(maxChannelCount uint64) *standardConfigValue {
 
 // kafkaBrokersValue returns the config definition for the addresses of the ordering service's Kafka brokers.
 // It is a value for the /Channel/Orderer group.
+// Deprecated: the kafka consensus type is no longer supported
 func kafkaBrokersValue(brokers []string) *standardConfigValue {
 	return &standardConfigValue{
 		key: orderer.KafkaBrokersKey,

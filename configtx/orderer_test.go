@@ -754,7 +754,13 @@ func TestNewOrdererGroup(t *testing.T) {
 			ordererConf, _ := baseOrdererOfType(t, tt.ordererType)
 
 			ordererGroup, err := newOrdererGroup(ordererConf)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if tt.ordererType != orderer.ConsensusTypeKafka {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the kafka consensus type is no longer supported"))
+				return
+			}
+
 			expectedConfigJSON := tt.expectedConfigJSONGen(ordererConf)
 
 			buf := bytes.Buffer{}
@@ -1224,7 +1230,12 @@ func TestOrdererConfiguration(t *testing.T) {
 			baseOrdererConf, _ := baseOrdererOfType(t, tt.ordererType)
 
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if tt.ordererType != orderer.ConsensusTypeKafka {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the kafka consensus type is no longer supported"))
+				return
+			}
 
 			config := &cb.Config{
 				ChannelGroup: &cb.ConfigGroup{
@@ -1328,7 +1339,12 @@ func TestOrdererConfigurationFailure(t *testing.T) {
 
 			baseOrdererConfig, _ := baseOrdererOfType(t, tt.ordererType)
 			ordererGroup, err := newOrdererGroup(baseOrdererConfig)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if tt.ordererType != orderer.ConsensusTypeKafka {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the kafka consensus type is no longer supported"))
+				return
+			}
 
 			config := &cb.Config{
 				ChannelGroup: &cb.ConfigGroup{
@@ -4313,7 +4329,12 @@ func TestRemoveLegacyKafkaBrokers(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeKafka)
+	// creates a channel config group that only contains an Orderer group.
+	channelGroup := newConfigGroup()
+	ordererConf, _ := baseOrdererOfType(t, orderer.ConsensusTypeKafka)
+	ordererGroup, err := newOrdererGroupWithOrdererConsensusTypeKafka(ordererConf)
+	gt.Expect(err).NotTo(HaveOccurred())
+	channelGroup.Groups[OrdererGroupKey] = ordererGroup
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	config := &cb.Config{
@@ -6243,6 +6264,7 @@ func baseSoloOrderer(t *testing.T) (Orderer, []*ecdsa.PrivateKey) {
 	}, []*ecdsa.PrivateKey{privKey}
 }
 
+// Deprecated: the kafka consensus type is no longer supported
 func baseKafkaOrderer(t *testing.T) (Orderer, []*ecdsa.PrivateKey) {
 	soloOrderer, privKeys := baseSoloOrderer(t)
 	soloOrderer.OrdererType = orderer.ConsensusTypeKafka
@@ -6315,4 +6337,87 @@ func marshalOrPanic(pb proto.Message) []byte {
 	}
 
 	return data
+}
+
+func newOrdererGroupWithOrdererConsensusTypeKafka(orderer Orderer) (*cb.ConfigGroup, error) {
+	ordererGroup := newConfigGroup()
+	ordererGroup.ModPolicy = AdminsPolicyKey
+
+	if orderer.ModPolicy != "" {
+		ordererGroup.ModPolicy = orderer.ModPolicy
+	}
+
+	if err := setOrdererPolicies(ordererGroup, orderer.Policies, AdminsPolicyKey); err != nil {
+		return nil, err
+	}
+
+	// add orderer values
+	err := addOrdererValuesWithOrdererConsensusTypeKafka(ordererGroup, orderer)
+	if err != nil {
+		return nil, err
+	}
+
+	// add orderer groups
+	for _, org := range orderer.Organizations {
+		// As of fabric v1.4 we expect new system channels to contain orderer endpoints at the org level
+		if len(org.OrdererEndpoints) == 0 {
+			return nil, fmt.Errorf("orderer endpoints are not defined for org %s", org.Name)
+		}
+
+		ordererGroup.Groups[org.Name], err = newOrdererOrgConfigGroup(org)
+		if err != nil {
+			return nil, fmt.Errorf("org group '%s': %v", org.Name, err)
+		}
+	}
+
+	return ordererGroup, nil
+}
+
+// addOrdererValues adds configuration specified in Orderer to an orderer
+// *cb.ConfigGroup's Values map.
+func addOrdererValuesWithOrdererConsensusTypeKafka(ordererGroup *cb.ConfigGroup, o Orderer) error {
+	err := setValue(ordererGroup, batchSizeValue(
+		o.BatchSize.MaxMessageCount,
+		o.BatchSize.AbsoluteMaxBytes,
+		o.BatchSize.PreferredMaxBytes,
+	), AdminsPolicyKey)
+	if err != nil {
+		return err
+	}
+
+	err = setValue(ordererGroup, batchTimeoutValue(o.BatchTimeout.String()), AdminsPolicyKey)
+	if err != nil {
+		return err
+	}
+
+	err = setValue(ordererGroup, channelRestrictionsValue(o.MaxChannels), AdminsPolicyKey)
+	if err != nil {
+		return err
+	}
+
+	if len(o.Capabilities) > 0 {
+		err = setValue(ordererGroup, capabilitiesValue(o.Capabilities), AdminsPolicyKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	var consensusMetadata []byte
+
+	err = setValue(ordererGroup, kafkaBrokersValue(o.Kafka.Brokers), AdminsPolicyKey)
+	if err != nil {
+		return err
+	}
+
+	consensusState, ok := ob.ConsensusType_State_value[string(o.State)]
+	if !ok {
+		return fmt.Errorf("unknown consensus state '%s'", o.State)
+	}
+
+	err = setValue(ordererGroup, consensusTypeValue(o.OrdererType, consensusMetadata, consensusState), AdminsPolicyKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
