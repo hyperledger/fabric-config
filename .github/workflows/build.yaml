@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+
+name: Verify Build
+
+on:
+  push:
+    branches:
+      - main
+      - release-*
+  pull_request:
+    branches:
+      - main
+      - release-*
+
+env:
+  GOPATH: /opt/go
+  PATH: /opt/go/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+  GO_VER: 1.20.7
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/setup-go@v3
+        name: Install Go
+        with:
+          go-version: ${{ env.GO_VER }}
+      - uses: actions/checkout@v3
+        name: Checkout Fabric Code
+      - run: ci/install-tools.sh
+        name: Install Tools
+      - run: ci/lint.sh
+        name: Vet and lint
+      - run: go test -race ./...
+        name: Run tests
