@@ -857,7 +857,7 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 			return fmt.Errorf("consenter options read failed with error %s for orderer type %s", err, orderer.ConsensusTypeBFT)
 		}
 		// Overwrite policy manually by computing it from the consenters
-		EncodeBFTBlockVerificationPolicy(o.ConsenterMapping, ordererGroup)
+		encodeBFTBlockVerificationPolicy(o.ConsenterMapping, ordererGroup)
 	default:
 		return fmt.Errorf("unknown orderer type '%s'", o.OrdererType)
 	}
@@ -879,9 +879,8 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 func MarshalBFTOptions(op *sb.Options) ([]byte, error) {
 	if copyMd, ok := proto.Clone(op).(*sb.Options); ok {
 		return proto.Marshal(copyMd)
-	} else {
-		return nil, errors.New("consenter options type mismatch")
 	}
+	return nil, errors.New("consenter options type mismatch")
 }
 
 // setOrdererPolicies adds *cb.ConfigPolicies to the passed Orderer *cb.ConfigGroup's Policies map.
@@ -1107,7 +1106,7 @@ func blockDataHashingStructureValue() *standardConfigValue {
 	}
 }
 
-func EncodeBFTBlockVerificationPolicy(consenterProtos []common.Consenter, ordererGroup *cb.ConfigGroup) error {
+func encodeBFTBlockVerificationPolicy(consenterProtos []common.Consenter, ordererGroup *cb.ConfigGroup) error {
 	n := len(consenterProtos)
 	f := (n - 1) / 3
 
@@ -1129,7 +1128,7 @@ func EncodeBFTBlockVerificationPolicy(consenterProtos []common.Consenter, ordere
 		})
 	}
 
-	quorumSize := ComputeBFTQuorum(n, f)
+	quorumSize := computeBFTQuorum(n, f)
 	sp := &cb.SignaturePolicyEnvelope{
 		Rule:       policydsl.NOutOf(int32(quorumSize), pols),
 		Identities: identities,
@@ -1149,6 +1148,6 @@ func EncodeBFTBlockVerificationPolicy(consenterProtos []common.Consenter, ordere
 	return nil
 }
 
-func ComputeBFTQuorum(totalNodes, faultyNodes int) int {
+func computeBFTQuorum(totalNodes, faultyNodes int) int {
 	return int(math.Ceil(float64(totalNodes+faultyNodes+1) / 2))
 }
