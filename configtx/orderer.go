@@ -16,10 +16,14 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-config/configtx/internal/policydsl"
 	"github.com/hyperledger/fabric-config/configtx/orderer"
+	"github.com/hyperledger/fabric-protos-go/common"
 	cb "github.com/hyperledger/fabric-protos-go/common"
+	mspa "github.com/hyperledger/fabric-protos-go/msp"
 	ob "github.com/hyperledger/fabric-protos-go/orderer"
 	eb "github.com/hyperledger/fabric-protos-go/orderer/etcdraft"
+	sb "github.com/hyperledger/fabric-protos-go/orderer/smartbft"
 )
 
 const (
@@ -38,6 +42,9 @@ type Orderer struct {
 	Kafka         orderer.Kafka
 	EtcdRaft      orderer.EtcdRaft
 	Organizations []Organization
+
+	SmartBFT         *sb.Options
+	ConsenterMapping []common.Consenter
 	// MaxChannels is the maximum count of channels an orderer supports.
 	MaxChannels uint64
 	// Capabilities is a map of the capabilities the orderer supports.
@@ -821,6 +828,36 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 		if consensusMetadata, err = marshalEtcdRaftMetadata(o.EtcdRaft); err != nil {
 			return fmt.Errorf("marshaling etcdraft metadata for orderer type '%s': %v", orderer.ConsensusTypeEtcdRaft, err)
 		}
+	case orderer.ConsensusTypeBFT:
+		consenterMapping := []*cb.Consenter{}
+		for _, consenter := range o.ConsenterMapping {
+			consenterMapping = append(consenterMapping, &cb.Consenter{
+				Id:            consenter.Id,
+				Host:          consenter.Host,
+				Port:          consenter.Port,
+				MspId:         consenter.MspId,
+				Identity:      consenter.Identity,
+				ClientTlsCert: consenter.ClientTlsCert,
+				ServerTlsCert: consenter.ServerTlsCert,
+			})
+		}
+		consentersProto, err := proto.Marshal(&cb.Orderers{
+			ConsenterMapping: consenterMapping,
+		})
+		if err != nil {
+			return fmt.Errorf("marshaling consenters for orderer type '%s': %v", orderer.ConsensusTypeBFT, err)
+		}
+
+		ordererGroup.Values["Orderers"] = &cb.ConfigValue{
+			Value:     consentersProto,
+			ModPolicy: "Admins",
+		}
+		// addValue(ordererGroup, channelconfig.OrderersValue(consenterProtos), channelconfig.AdminsPolicyKey)
+		if consensusMetadata, err = MarshalBFTOptions(o.SmartBFT); err != nil {
+			return fmt.Errorf("consenter options read failed with error %s for orderer type %s", err, orderer.ConsensusTypeBFT)
+		}
+		// Overwrite policy manually by computing it from the consenters
+		EncodeBFTBlockVerificationPolicy(o.ConsenterMapping, ordererGroup)
 	default:
 		return fmt.Errorf("unknown orderer type '%s'", o.OrdererType)
 	}
@@ -836,6 +873,15 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 	}
 
 	return nil
+}
+
+// MarshalBFTOptions serializes smartbft options.
+func MarshalBFTOptions(op *sb.Options) ([]byte, error) {
+	if copyMd, ok := proto.Clone(op).(*sb.Options); ok {
+		return proto.Marshal(copyMd)
+	} else {
+		return nil, errors.New("consenter options type mismatch")
+	}
 }
 
 // setOrdererPolicies adds *cb.ConfigPolicies to the passed Orderer *cb.ConfigGroup's Policies map.
@@ -1059,4 +1105,50 @@ func blockDataHashingStructureValue() *standardConfigValue {
 			Width: defaultBlockDataHashingStructureWidth,
 		},
 	}
+}
+
+func EncodeBFTBlockVerificationPolicy(consenterProtos []common.Consenter, ordererGroup *cb.ConfigGroup) error {
+	n := len(consenterProtos)
+	f := (n - 1) / 3
+
+	var identities []*mspa.MSPPrincipal
+	var pols []*cb.SignaturePolicy
+	for i, consenter := range consenterProtos {
+		pols = append(pols, &cb.SignaturePolicy{
+			Type: &cb.SignaturePolicy_SignedBy{
+				SignedBy: int32(i),
+			},
+		})
+		principalBytes, err := proto.Marshal(&mspa.SerializedIdentity{Mspid: consenter.MspId, IdBytes: consenter.Identity})
+		if err != nil {
+			return err
+		}
+		identities = append(identities, &mspa.MSPPrincipal{
+			PrincipalClassification: mspa.MSPPrincipal_IDENTITY,
+			Principal:               principalBytes,
+		})
+	}
+
+	quorumSize := ComputeBFTQuorum(n, f)
+	sp := &cb.SignaturePolicyEnvelope{
+		Rule:       policydsl.NOutOf(int32(quorumSize), pols),
+		Identities: identities,
+	}
+	policyValue, err := proto.Marshal(sp)
+	if err != nil {
+		return err
+	}
+	ordererGroup.Policies[BlockValidationPolicyKey] = &cb.ConfigPolicy{
+		// Inherit modification policy
+		ModPolicy: ordererGroup.Policies[BlockValidationPolicyKey].ModPolicy,
+		Policy: &cb.Policy{
+			Type:  int32(cb.Policy_SIGNATURE),
+			Value: policyValue,
+		},
+	}
+	return nil
+}
+
+func ComputeBFTQuorum(totalNodes, faultyNodes int) int {
+	return int(math.Ceil(float64(totalNodes+faultyNodes+1) / 2))
 }
