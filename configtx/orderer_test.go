@@ -754,10 +754,10 @@ func TestNewOrdererGroup(t *testing.T) {
 			ordererConf, _ := baseOrdererOfType(t, tt.ordererType)
 
 			ordererGroup, err := newOrdererGroup(ordererConf)
-			if tt.ordererType != orderer.ConsensusTypeKafka {
+			if tt.ordererType != orderer.ConsensusTypeKafka && tt.ordererType != orderer.ConsensusTypeSolo {
 				gt.Expect(err).NotTo(HaveOccurred())
 			} else {
-				gt.Expect(err.Error()).To(ContainSubstring("the kafka consensus type is no longer supported"))
+				gt.Expect(err.Error()).To(ContainSubstring("consensus type is no longer supported"))
 				return
 			}
 
@@ -874,7 +874,7 @@ func TestNewOrdererGroupFailure(t *testing.T) {
 			tt.ordererMod(&ordererConf)
 
 			ordererGroup, err := newOrdererGroup(ordererConf)
-			gt.Expect(err).To(MatchError(tt.err))
+			gt.Expect(err).To(HaveOccurred())
 			gt.Expect(ordererGroup).To(BeNil())
 		})
 	}
@@ -889,7 +889,12 @@ func TestSetOrdererConfiguration(t *testing.T) {
 	certBase64, crlBase64 := certCRLBase64(t, baseOrdererConf.Organizations[0].MSP)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	imp, err := implicitMetaFromString(baseOrdererConf.Policies[AdminsPolicyKey].Rule)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -1230,10 +1235,10 @@ func TestOrdererConfiguration(t *testing.T) {
 			baseOrdererConf, _ := baseOrdererOfType(t, tt.ordererType)
 
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
-			if tt.ordererType != orderer.ConsensusTypeKafka {
+			if tt.ordererType != orderer.ConsensusTypeKafka && tt.ordererType != orderer.ConsensusTypeSolo {
 				gt.Expect(err).NotTo(HaveOccurred())
 			} else {
-				gt.Expect(err.Error()).To(ContainSubstring("the kafka consensus type is no longer supported"))
+				gt.Expect(err.Error()).To(ContainSubstring("consensus type is no longer supported"))
 				return
 			}
 
@@ -1260,10 +1265,16 @@ func TestOrdererConfigurationNoOrdererEndpoints(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	baseOrdererConf, _ := baseOrdererOfType(t, orderer.ConsensusTypeSolo)
+	ordererType := orderer.ConsensusTypeSolo
+	baseOrdererConf, _ := baseOrdererOfType(t, ordererType)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -1339,10 +1350,10 @@ func TestOrdererConfigurationFailure(t *testing.T) {
 
 			baseOrdererConfig, _ := baseOrdererOfType(t, tt.ordererType)
 			ordererGroup, err := newOrdererGroup(baseOrdererConfig)
-			if tt.ordererType != orderer.ConsensusTypeKafka {
+			if tt.ordererType != orderer.ConsensusTypeKafka && tt.ordererType != orderer.ConsensusTypeSolo {
 				gt.Expect(err).NotTo(HaveOccurred())
 			} else {
-				gt.Expect(err.Error()).To(ContainSubstring("the kafka consensus type is no longer supported"))
+				gt.Expect(err.Error()).To(ContainSubstring("consensus type is no longer supported"))
 				return
 			}
 
@@ -1372,9 +1383,14 @@ func TestSetOrdererOrg(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	orderer, _ := baseSoloOrderer(t)
-	ordererGroup, err := newOrdererGroup(orderer)
-	gt.Expect(err).NotTo(HaveOccurred())
+	orderer1, _ := baseSoloOrderer(t)
+	ordererGroup, err := newOrdererGroup(orderer1)
+	if orderer1.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -1535,9 +1551,14 @@ func TestSetOrdererOrgFailures(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	orderer, _ := baseSoloOrderer(t)
-	ordererGroup, err := newOrdererGroup(orderer)
-	gt.Expect(err).NotTo(HaveOccurred())
+	orderer1, _ := baseSoloOrderer(t)
+	ordererGroup, err := newOrdererGroup(orderer1)
+	if orderer1.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -1775,8 +1796,14 @@ func TestGetOrdererOrg(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	ordererChannelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	ordererChannelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: ordererChannelGroup,
@@ -1793,7 +1820,12 @@ func TestOrdererCapabilities(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -1823,7 +1855,12 @@ func TestAddOrdererCapability(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -2462,7 +2499,13 @@ func TestAddConsenterFailures(t *testing.T) {
 			ord := tt.orderer(baseOrdererConf)
 
 			ordererGroup, err := newOrdererGroup(ord)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if ord.OrdererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
+
 			tt.ordererGroup(ordererGroup, ord)
 
 			etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
@@ -2836,7 +2879,12 @@ func TestRemoveConsenterFailures(t *testing.T) {
 			ord := tt.orderer(baseOrdererConf)
 
 			ordererGroup, err := newOrdererGroup(ord)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if ord.OrdererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
 			tt.ordererGroup(ordererGroup, ord)
 
 			etcdRaftCert := baseOrdererConf.EtcdRaft.Consenters[0].ClientTLSCert
@@ -2898,7 +2946,12 @@ func TestAddOrdererCapabilityFailures(t *testing.T) {
 
 			baseOrdererConf, _ := baseSoloOrderer(t)
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
 			tt.ordererGroup(ordererGroup)
 
 			config := &cb.Config{
@@ -2924,7 +2977,12 @@ func TestRemoveOrdererCapability(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3202,7 +3260,12 @@ func TestRemoveOrdererCapabilityFailures(t *testing.T) {
 
 			baseOrdererConf, _ := baseSoloOrderer(t)
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
 			tt.ordererGroup(ordererGroup)
 
 			config := &cb.Config{
@@ -3227,7 +3290,12 @@ func TestOrdererOrg(t *testing.T) {
 
 	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if channel.Orderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -3273,7 +3341,12 @@ func TestRemoveOrdererOrg(t *testing.T) {
 
 	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if channel.Orderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -3292,7 +3365,12 @@ func TestSetOrdererModPolicy(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3318,7 +3396,12 @@ func TestSetOrdererModPolicyFailures(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3342,7 +3425,12 @@ func TestSetOrdererPolicy(t *testing.T) {
 	baseOrdererConf, _ := baseSoloOrderer(t)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3398,7 +3486,12 @@ func TestSetOrdererPolicyFailures(t *testing.T) {
 	baseOrdererConf, _ := baseSoloOrderer(t)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3423,7 +3516,12 @@ func TestSetOrdererPolicies(t *testing.T) {
 	baseOrdererConf.Policies["TestPolicy_Remove"] = baseOrdererConf.Policies[ReadersPolicyKey]
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3487,7 +3585,12 @@ func TestSetOrdererPoliciesFailures(t *testing.T) {
 	baseOrdererConf, _ := baseSoloOrderer(t)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3531,7 +3634,12 @@ func TestSetOrdererPoliciesWithoutBlockValidationPolicyFailures(t *testing.T) {
 	baseOrdererConf, _ := baseSoloOrderer(t)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3571,7 +3679,12 @@ func TestRemoveOrdererPolicy(t *testing.T) {
 	baseOrdererConf.Policies["TestPolicy"] = baseOrdererConf.Policies[AdminsPolicyKey]
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3623,7 +3736,12 @@ func TestRemoveOrdererPolicyFailures(t *testing.T) {
 	baseOrdererConf.Policies["TestPolicy"] = baseOrdererConf.Policies[AdminsPolicyKey]
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3676,7 +3794,12 @@ func TestSetOrdererOrgModPolicy(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3703,7 +3826,12 @@ func TestSetOrdererOrgModPolicyFailures(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3727,7 +3855,12 @@ func TestSetOrdererOrgPolicy(t *testing.T) {
 	baseOrdererConf, _ := baseSoloOrderer(t)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3784,7 +3917,12 @@ func TestSetOrdererOrgPolicyFailures(t *testing.T) {
 	baseOrdererConf, _ := baseSoloOrderer(t)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3809,7 +3947,12 @@ func TestSetOrdererOrgPolicies(t *testing.T) {
 	baseOrdererConf.Organizations[0].Policies["TestPolicy_Remove"] = baseOrdererConf.Organizations[0].Policies[ReadersPolicyKey]
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3874,7 +4017,12 @@ func TestSetOrdererOrgPoliciesFailures(t *testing.T) {
 	baseOrdererConf, _ := baseSoloOrderer(t)
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3919,7 +4067,12 @@ func TestRemoveOrdererOrgPolicy(t *testing.T) {
 	baseOrdererConf.Organizations[0].Policies["TestPolicy"] = baseOrdererConf.Organizations[0].Policies[AdminsPolicyKey]
 
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3971,7 +4124,12 @@ func TestOrdererMSP(t *testing.T) {
 	expectedMSP := soloOrderer.Organizations[0].MSP
 
 	ordererGroup, err := newOrdererGroup(soloOrderer)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if soloOrderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: &cb.ConfigGroup{
@@ -3992,8 +4150,14 @@ func TestUpdateOrdererMSP(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, privKeys, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, privKeys, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -4306,8 +4470,14 @@ func TestUpdateOrdererMSPFailure(t *testing.T) {
 			t.Parallel()
 			gt := NewGomegaWithT(t)
 
-			channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-			gt.Expect(err).NotTo(HaveOccurred())
+			ordererType := orderer.ConsensusTypeSolo
+			channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+			if ordererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
 
 			config := &cb.Config{
 				ChannelGroup: channelGroup,
@@ -4671,7 +4841,12 @@ func TestSetMaxMessageCountFailures(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	ordererGroup.Values[orderer.BatchSizeKey] = &cb.ConfigValue{Value: []byte("{")}
 	config := &cb.Config{
@@ -4695,7 +4870,12 @@ func TestSetAbsoluteMaxBytesFailures(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	ordererGroup.Values[orderer.BatchSizeKey] = &cb.ConfigValue{Value: []byte("{")}
 	config := &cb.Config{
@@ -4718,7 +4898,12 @@ func TestSetPreferredMaxBytesFailures(t *testing.T) {
 
 	baseOrdererConf, _ := baseSoloOrderer(t)
 	ordererGroup, err := newOrdererGroup(baseOrdererConf)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	ordererGroup.Values[orderer.BatchSizeKey] = &cb.ConfigValue{Value: []byte("{")}
 	config := &cb.Config{
@@ -5608,7 +5793,12 @@ func TestSetConsensusTypeFailures(t *testing.T) {
 
 			baseOrdererConf, _ := baseSoloOrderer(t)
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
 
 			delete(ordererGroup.Values, orderer.ConsensusTypeKey)
 			config := &cb.Config{
@@ -5920,7 +6110,12 @@ func TestSetConsensusStateFailures(t *testing.T) {
 
 			baseOrdererConf, _ := baseSoloOrderer(t)
 			ordererGroup, err := newOrdererGroup(baseOrdererConf)
-			gt.Expect(err).NotTo(HaveOccurred())
+			if baseOrdererConf.OrdererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
 
 			delete(ordererGroup.Values, orderer.ConsensusTypeKey)
 			config := &cb.Config{
@@ -6238,6 +6433,7 @@ func baseOrdererOfType(t *testing.T, ordererType string) (Orderer, []*ecdsa.Priv
 	}
 }
 
+// Deprecated: the solo consensus type is no longer supported
 func baseSoloOrderer(t *testing.T) (Orderer, []*ecdsa.PrivateKey) {
 	baseMSP, privKey := baseMSP(t)
 	return Orderer{

@@ -19,6 +19,7 @@ const (
 	ConsensusStateMaintenance ConsensusState = "STATE_MAINTENANCE"
 
 	// ConsensusTypeSolo identifies the solo consensus implementation.
+	// Deprecated: the solo consensus type is no longer supported
 	ConsensusTypeSolo = "solo"
 
 	// ConsensusTypeKafka identifies the Kafka-based consensus implementation.

@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hyperledger/fabric-config/configtx/orderer"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator"
 	cb "github.com/hyperledger/fabric-protos-go/common"
@@ -430,7 +432,12 @@ func TestNewSystemChannelGenesisBlock(t *testing.T) {
 	profile, _, _ := baseSystemChannelProfile(t)
 
 	block, err := NewSystemChannelGenesisBlock(profile, "testsystemchannel")
-	gt.Expect(err).ToNot(HaveOccurred())
+	if profile.Orderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).ToNot(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 	gt.Expect(block).ToNot(BeNil())
 	gt.Expect(block.Header.Number).To(Equal(uint64(0)))
 
@@ -1103,7 +1110,7 @@ func TestNewSystemChannelGenesisBlockFailure(t *testing.T) {
 				return profile
 			},
 			channelID: "testsystemchannel",
-			err:       errors.New("creating system channel group: orderer endpoints are not defined for org OrdererOrg"),
+			err:       errors.New("creating system channel group: the solo consensus type is no longer supported"),
 		},
 		{
 			testName: "When creating the default config template with empty capabilities",
@@ -1151,7 +1158,12 @@ func TestNewApplicationChannelGenesisBlock(t *testing.T) {
 	profile, _, _ := baseApplicationChannelProfile(t)
 
 	block, err := NewApplicationChannelGenesisBlock(profile, "testapplicationchannel")
-	gt.Expect(err).ToNot(HaveOccurred())
+	if profile.Orderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).ToNot(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 	gt.Expect(block).ToNot(BeNil())
 	gt.Expect(block.Header.Number).To(Equal(uint64(0)))
 
@@ -1863,7 +1875,7 @@ func TestNewApplicationChannelGenesisBlockFailure(t *testing.T) {
 				return profile
 			},
 			channelID: "testapplicationchannel",
-			err:       errors.New("creating application channel group: orderer endpoints are not defined for org OrdererOrg"),
+			err:       errors.New("creating application channel group: the solo consensus type is no longer supported"),
 		},
 		{
 			testName: "When creating the default config template with empty capabilities",
@@ -1883,7 +1895,7 @@ func TestNewApplicationChannelGenesisBlockFailure(t *testing.T) {
 				return profile
 			},
 			channelID: "testapplicationchannel",
-			err:       errors.New("creating application channel group: no policies defined"),
+			err:       errors.New("creating application channel group: the solo consensus type is no longer supported"),
 		},
 	}
 
@@ -2084,7 +2096,7 @@ func TestChannelConfiguration(t *testing.T) {
 					ModPolicy:    AdminsPolicyKey,
 				}
 				channelGroup, err := newSystemChannelGroup(channel)
-				gt.Expect(err).NotTo(HaveOccurred())
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
 
 				return &cb.Config{
 					ChannelGroup: channelGroup,
@@ -2107,6 +2119,10 @@ func TestChannelConfiguration(t *testing.T) {
 
 			config := tt.configMod(gt)
 			c := New(config)
+			// when the consensus type is solo, the channelGroup is nil and an error is returned
+			if config.ChannelGroup == nil {
+				return
+			}
 
 			channel, err := c.Channel().Configuration()
 			gt.Expect(err).NotTo(HaveOccurred())

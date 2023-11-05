@@ -15,6 +15,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/hyperledger/fabric-config/configtx/orderer"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator"
 	"github.com/hyperledger/fabric-config/protolator/protoext/commonext"
@@ -848,7 +850,12 @@ func TestGetConsortiums(t *testing.T) {
 		Consortium:   "testconsortium",
 	}
 	channelGroup, err := newSystemChannelGroup(channel)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if channel.Orderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{ChannelGroup: channelGroup}
 	c := New(config)
@@ -1426,7 +1433,12 @@ func TestConsortiumOrg(t *testing.T) {
 
 	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if channel.Orderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1474,7 +1486,12 @@ func TestRemoveConsortiumOrg(t *testing.T) {
 
 	channel, _, _ := baseSystemChannelProfile(t)
 	channelGroup, err := newSystemChannelGroup(channel)
-	gt.Expect(err).NotTo(HaveOccurred())
+	if channel.Orderer.OrdererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
