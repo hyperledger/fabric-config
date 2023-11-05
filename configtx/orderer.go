@@ -815,6 +815,7 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 
 	switch o.OrdererType {
 	case orderer.ConsensusTypeSolo:
+		return fmt.Errorf("the solo consensus type is no longer supported")
 	case orderer.ConsensusTypeKafka:
 		return fmt.Errorf("the kafka consensus type is no longer supported")
 	case orderer.ConsensusTypeEtcdRaft:
