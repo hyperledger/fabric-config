@@ -18,7 +18,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/configtx/internal/policydsl"
 	"github.com/hyperledger/fabric-config/configtx/orderer"
-	"github.com/hyperledger/fabric-protos-go/common"
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	mspa "github.com/hyperledger/fabric-protos-go/msp"
 	ob "github.com/hyperledger/fabric-protos-go/orderer"
@@ -44,7 +43,7 @@ type Orderer struct {
 	Organizations []Organization
 
 	SmartBFT         *sb.Options
-	ConsenterMapping []common.Consenter
+	ConsenterMapping []cb.Consenter
 	// MaxChannels is the maximum count of channels an orderer supports.
 	MaxChannels uint64
 	// Capabilities is a map of the capabilities the orderer supports.
@@ -109,6 +108,7 @@ func (o *OrdererGroup) Configuration() (Orderer, error) {
 	// CONSENSUS TYPE, STATE, AND METADATA
 	var etcdRaft orderer.EtcdRaft
 	var smartBFT *sb.Options
+	var consenterMapping []cb.Consenter
 	kafkaBrokers := orderer.Kafka{}
 
 	consensusTypeProto := &ob.ConsensusType{}
@@ -145,6 +145,27 @@ func (o *OrdererGroup) Configuration() (Orderer, error) {
 		if err != nil {
 			return Orderer{}, fmt.Errorf("unmarshaling smart BFT options: %v", err)
 		}
+
+		orderersConfigValue, ok := o.ordererGroup.Values["Orderers"]
+		if !ok {
+			return Orderer{}, errors.New("unable to find orderers for orderer org")
+		}
+		orderers := cb.Orderers{}
+		err = proto.Unmarshal(orderersConfigValue.Value, &orderers)
+		if err != nil {
+			return Orderer{}, fmt.Errorf("unmarshaling orderers: %v", err)
+		}
+		for _, consenterItem := range orderers.ConsenterMapping {
+			consenterMapping = append(consenterMapping, cb.Consenter{
+				Id:            consenterItem.Id,
+				Host:          consenterItem.Host,
+				Port:          consenterItem.Port,
+				MspId:         consenterItem.MspId,
+				Identity:      consenterItem.Identity,
+				ClientTlsCert: consenterItem.ClientTlsCert,
+				ServerTlsCert: consenterItem.ServerTlsCert,
+			})
+		}
 	default:
 		return Orderer{}, fmt.Errorf("config contains unknown consensus type '%s'", consensusTypeProto.Type)
 	}
@@ -165,27 +186,6 @@ func (o *OrdererGroup) Configuration() (Orderer, error) {
 	batchTimeout, err := time.ParseDuration(batchTimeoutProto.Timeout)
 	if err != nil {
 		return Orderer{}, fmt.Errorf("batch timeout configuration '%s' is not a duration string", batchTimeoutProto.Timeout)
-	}
-	orderersConfigValue, ok := o.ordererGroup.Values["Orderers"]
-	if !ok {
-		return Orderer{}, errors.New("unable to find orderers for orderer org")
-	}
-	orderers := cb.Orderers{}
-	err = proto.Unmarshal(orderersConfigValue.Value, &orderers)
-	if err != nil {
-		return Orderer{}, fmt.Errorf("unmarshaling orderers: %v", err)
-	}
-	var consenterMapping []common.Consenter
-	for _, consenterItem := range orderers.ConsenterMapping {
-		consenterMapping = append(consenterMapping, common.Consenter{
-			Id:            consenterItem.Id,
-			Host:          consenterItem.Host,
-			Port:          consenterItem.Port,
-			MspId:         consenterItem.MspId,
-			Identity:      consenterItem.Identity,
-			ClientTlsCert: consenterItem.ClientTlsCert,
-			ServerTlsCert: consenterItem.ServerTlsCert,
-		})
 	}
 
 	// ORDERER ORGS
@@ -909,10 +909,7 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 
 // marshalBFTOptions serializes smartbft options.
 func marshalBFTOptions(op *sb.Options) ([]byte, error) {
-	if copyMd, ok := proto.Clone(op).(*sb.Options); ok {
-		return proto.Marshal(copyMd)
-	}
-	return nil, errors.New("consenter options type mismatch")
+	return proto.Marshal(op)
 }
 
 // setOrdererPolicies adds *cb.ConfigPolicies to the passed Orderer *cb.ConfigGroup's Policies map.
@@ -1148,7 +1145,7 @@ func blockDataHashingStructureValue() *standardConfigValue {
 	}
 }
 
-func encodeBFTBlockVerificationPolicy(consenterProtos []common.Consenter, ordererGroup *cb.ConfigGroup) error {
+func encodeBFTBlockVerificationPolicy(consenterProtos []cb.Consenter, ordererGroup *cb.ConfigGroup) error {
 	n := len(consenterProtos)
 	f := (n - 1) / 3
 
