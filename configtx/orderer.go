@@ -42,7 +42,7 @@ type Orderer struct {
 	EtcdRaft      orderer.EtcdRaft
 	Organizations []Organization
 
-	SmartBFT         *sb.Options
+	SmartBFTOptions  *sb.Options
 	ConsenterMapping []cb.Consenter
 	// MaxChannels is the maximum count of channels an orderer supports.
 	MaxChannels uint64
@@ -146,7 +146,7 @@ func (o *OrdererGroup) Configuration() (Orderer, error) {
 			return Orderer{}, fmt.Errorf("unmarshaling smart BFT options: %v", err)
 		}
 
-		orderersConfigValue, ok := o.ordererGroup.Values["Orderers"]
+		orderersConfigValue, ok := o.ordererGroup.Values[OrderersGroupKey]
 		if !ok {
 			return Orderer{}, errors.New("unable to find orderers for orderer org")
 		}
@@ -229,7 +229,7 @@ func (o *OrdererGroup) Configuration() (Orderer, error) {
 		Kafka:            kafkaBrokers,
 		EtcdRaft:         etcdRaft,
 		ConsenterMapping: consenterMapping,
-		SmartBFT:         smartBFT,
+		SmartBFTOptions:  smartBFT,
 		Organizations:    ordererOrgs,
 		MaxChannels:      channelRestrictions.MaxCount,
 		Capabilities:     capabilities,
@@ -877,12 +877,12 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 			return fmt.Errorf("marshaling consenters for orderer type '%s': %v", orderer.ConsensusTypeBFT, err)
 		}
 
-		ordererGroup.Values["Orderers"] = &cb.ConfigValue{
+		ordererGroup.Values[OrderersGroupKey] = &cb.ConfigValue{
 			Value:     consentersProto,
 			ModPolicy: "Admins",
 		}
 		// addValue(ordererGroup, channelconfig.OrderersValue(consenterProtos), channelconfig.AdminsPolicyKey)
-		if consensusMetadata, err = marshalBFTOptions(o.SmartBFT); err != nil {
+		if consensusMetadata, err = marshalBFTOptions(o.SmartBFTOptions); err != nil {
 			return fmt.Errorf("consenter options read failed with error %s for orderer type %s", err, orderer.ConsensusTypeBFT)
 		}
 		// Overwrite policy manually by computing it from the consenters
