@@ -42,7 +42,7 @@ type Orderer struct {
 	EtcdRaft      orderer.EtcdRaft
 	Organizations []Organization
 
-	SmartBFTOptions  *sb.Options
+	SmartBFT         *sb.Options
 	ConsenterMapping []cb.Consenter
 	// MaxChannels is the maximum count of channels an orderer supports.
 	MaxChannels uint64
@@ -229,7 +229,7 @@ func (o *OrdererGroup) Configuration() (Orderer, error) {
 		Kafka:            kafkaBrokers,
 		EtcdRaft:         etcdRaft,
 		ConsenterMapping: consenterMapping,
-		SmartBFTOptions:  smartBFT,
+		SmartBFT:         smartBFT,
 		Organizations:    ordererOrgs,
 		MaxChannels:      channelRestrictions.MaxCount,
 		Capabilities:     capabilities,
@@ -882,7 +882,7 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 			ModPolicy: "Admins",
 		}
 		// addValue(ordererGroup, channelconfig.OrderersValue(consenterProtos), channelconfig.AdminsPolicyKey)
-		if consensusMetadata, err = marshalBFTOptions(o.SmartBFTOptions); err != nil {
+		if consensusMetadata, err = marshalBFTOptions(o.SmartBFT); err != nil {
 			return fmt.Errorf("consenter options read failed with error %s for orderer type %s", err, orderer.ConsensusTypeBFT)
 		}
 		// Overwrite policy manually by computing it from the consenters
