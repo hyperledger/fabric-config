@@ -144,9 +144,14 @@ func TestMSPConfigurationFailures(t *testing.T) {
 			consortiumsGroup, err := newConsortiumsGroup(consortiums)
 			gt.Expect(err).NotTo(HaveOccurred())
 
-			orderer, _ := baseSoloOrderer(t)
-			ordererGroup, err := newOrdererGroup(orderer)
-			gt.Expect(err).NotTo(HaveOccurred())
+			orderer1, _ := baseSoloOrderer(t)
+			ordererGroup, err := newOrdererGroup(orderer1)
+			if orderer1.OrdererType != orderer.ConsensusTypeSolo {
+				gt.Expect(err).NotTo(HaveOccurred())
+			} else {
+				gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+				return
+			}
 
 			application, _ := baseApplication(t)
 			applicationGroup, err := newApplicationGroup(application)
@@ -375,8 +380,14 @@ func TestAddAdminCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -405,8 +416,14 @@ func TestAddAdminCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -424,8 +441,14 @@ func TestRemoveAdminCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -451,8 +474,14 @@ func TestRemoveAdminCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -470,8 +499,14 @@ func TestAddRootCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -500,8 +535,14 @@ func TestAddRootCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -522,8 +563,14 @@ func TestRemoveRootCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -553,8 +600,14 @@ func TestRemoveRootCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -572,8 +625,14 @@ func TestAddIntermediateCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, privKeys, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, privKeys, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -603,8 +662,14 @@ func TestAddIntermediateCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -622,8 +687,14 @@ func TestRemoveIntermediateCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -649,8 +720,14 @@ func TestRemoveIntermediateCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -668,8 +745,14 @@ func TestAddOUIdentifier(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -699,8 +782,14 @@ func TestAddOUIdentifierFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -723,8 +812,14 @@ func TestRemoveOUIdentifier(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -749,8 +844,14 @@ func TestRemoveOUIdentifierFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -773,8 +874,14 @@ func TestSetCryptoConfig(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -797,8 +904,14 @@ func TestSetCryptoConfigFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -817,8 +930,14 @@ func TestAddTLSRootCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -842,8 +961,14 @@ func TestAddTLSRootCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -861,8 +986,14 @@ func TestRemoveTLSRootCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -892,8 +1023,14 @@ func TestRemoveTLSRootCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -911,8 +1048,14 @@ func TestRemoveTLSRootCertVerifyFailure(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -936,8 +1079,14 @@ func TestAddTLSIntermediateCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, privKeys, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, privKeys, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -966,8 +1115,14 @@ func TestAddTLSIntermediateCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -985,8 +1140,14 @@ func TestRemoveTLSIntermediateCert(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1012,8 +1173,14 @@ func TestRemoveTLSIntermediateCertFailure(t *testing.T) {
 
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1031,8 +1198,14 @@ func TestSetClientOUIdentifier(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1058,8 +1231,14 @@ func TestSetClientOUIdentifierFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1082,8 +1261,14 @@ func TestSetPeerOUIdentifier(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1109,8 +1294,14 @@ func TestSetPeerOUIdentifierFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1133,8 +1324,14 @@ func TestSetAdminOUIdentifier(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1160,8 +1357,14 @@ func TestSetAdminOUIdentifierFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1184,8 +1387,14 @@ func TestSetOrdererOUIdentifier(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1211,8 +1420,14 @@ func TestSetOrdererOUIdentifierFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1235,8 +1450,14 @@ func TestSetEnableNodeOUs(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1257,8 +1478,14 @@ func TestSetEnableNodeOUsFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1275,8 +1502,14 @@ func TestAddCRL(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, privKeys, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, privKeys, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1307,8 +1540,14 @@ func TestAddCRLFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1326,8 +1565,14 @@ func TestAddCRLFromSigningIdentityFailures(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, _, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, _, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
@@ -1345,8 +1590,14 @@ func TestAddCRLFromSigningIdentity(t *testing.T) {
 	t.Parallel()
 	gt := NewGomegaWithT(t)
 
-	channelGroup, privKeys, err := baseOrdererChannelGroup(t, orderer.ConsensusTypeSolo)
-	gt.Expect(err).NotTo(HaveOccurred())
+	ordererType := orderer.ConsensusTypeSolo
+	channelGroup, privKeys, err := baseOrdererChannelGroup(t, ordererType)
+	if ordererType != orderer.ConsensusTypeSolo {
+		gt.Expect(err).NotTo(HaveOccurred())
+	} else {
+		gt.Expect(err.Error()).To(ContainSubstring("the solo consensus type is no longer supported"))
+		return
+	}
 
 	config := &cb.Config{
 		ChannelGroup: channelGroup,
