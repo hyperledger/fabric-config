@@ -469,6 +469,20 @@ func (o *OrdererGroup) SetConfiguration(ord Orderer) error {
 	return nil
 }
 
+func (o *OrdererGroup) SetConsenterMapping(consenterMapping []*cb.Consenter) error {
+	val, err := proto.Marshal(&cb.Orderers{
+		ConsenterMapping: consenterMapping,
+	})
+	if err != nil {
+		return err
+	}
+	o.ordererGroup.Values[OrderersGroupKey] = &cb.ConfigValue{
+		Value:     val,
+		ModPolicy: "Admins",
+	}
+	return nil
+}
+
 // AddConsenter adds a consenter to an etcdraft configuration.
 func (o *OrdererGroup) AddConsenter(consenter orderer.Consenter) error {
 	cfg, err := o.Configuration()
