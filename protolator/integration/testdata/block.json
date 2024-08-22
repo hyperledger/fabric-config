@@ -560,7 +560,7 @@
 							"epoch": "0",
 							"extension": null,
 							"timestamp": "2019-04-21T19:35:42Z",
-							"tls_cert_hash": null,
+							"tls_cert_hash": "",
 							"tx_id": "7c179b7100bb0c0b33dad5114f0294e2509e9be9fbfa0ac9d38b43703ea57138",
 							"type": 1,
 							"version": 1
@@ -571,14 +571,14 @@
 						}
 					}
 				},
-				"signature": null
+				"signature": ""
 			}
 		]
 	},
 	"header": {
 		"data_hash": "idkpZn9B0jX9nL0kASTuPnA1PJDeXToBquHOas7f3Kk=",
 		"number": "0",
-		"previous_hash": null
+		"previous_hash": ""
 	},
 	"metadata": {
 		"metadata": [

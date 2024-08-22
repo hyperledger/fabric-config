@@ -9,10 +9,9 @@ package commonext
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-protos-go/common"
-
+	"github.com/hyperledger/fabric-protos-go-apiv2/common"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestCommonProtolator(t *testing.T) {

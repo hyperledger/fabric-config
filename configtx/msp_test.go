@@ -18,13 +18,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/configtx/membership"
 	"github.com/hyperledger/fabric-config/configtx/orderer"
 	"github.com/hyperledger/fabric-config/protolator"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	mb "github.com/hyperledger/fabric-protos-go/msp"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
+	mb "github.com/hyperledger/fabric-protos-go-apiv2/msp"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestMSPConfigurationFailures(t *testing.T) {
@@ -275,7 +275,7 @@ func TestMSPToProto(t *testing.T) {
 
 	fabricMSPConfigProto, err := msp.toProto()
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(fabricMSPConfigProto).To(Equal(expectedFabricMSPConfigProto))
+	gt.Expect(proto.Equal(fabricMSPConfigProto, expectedFabricMSPConfigProto)).To(BeTrue())
 }
 
 func TestMSPToProtoNoNodeOUs(t *testing.T) {
@@ -328,7 +328,7 @@ func TestMSPToProtoNoNodeOUs(t *testing.T) {
 
 	fabricMSPConfigProto, err := msp.toProto()
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(fabricMSPConfigProto).To(Equal(expectedFabricMSPConfigProto))
+	gt.Expect(proto.Equal(fabricMSPConfigProto, expectedFabricMSPConfigProto)).To(BeTrue())
 }
 
 func TestParseCertificateFromBytesFailure(t *testing.T) {

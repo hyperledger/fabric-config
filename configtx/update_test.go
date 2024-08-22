@@ -9,7 +9,9 @@ package configtx
 import (
 	"testing"
 
-	cb "github.com/hyperledger/fabric-protos-go/common"
+	"google.golang.org/protobuf/proto"
+
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	. "github.com/onsi/gomega"
 )
 
@@ -147,7 +149,7 @@ func TestGroupPolicyModification(t *testing.T) {
 		Groups: map[string]*cb.ConfigGroup{},
 	}
 
-	gt.Expect(expectedWriteSet).To(Equal(cu.WriteSet), "Mismatched write set")
+	gt.Expect(proto.Equal(expectedWriteSet, cu.WriteSet)).To(BeTrue(), "Mismatched write set")
 }
 
 func TestGroupValueModification(t *testing.T) {
