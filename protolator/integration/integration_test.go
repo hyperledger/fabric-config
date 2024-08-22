@@ -8,15 +8,15 @@ package integration
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	mb "github.com/hyperledger/fabric-protos-go/msp"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
+	mb "github.com/hyperledger/fabric-protos-go-apiv2/msp"
+	pb "github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 )
 
 func bidirectionalMarshal(t *testing.T, doc proto.Message) {
@@ -28,7 +28,7 @@ func bidirectionalMarshal(t *testing.T, doc proto.Message) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	newRoot := proto.Clone(doc)
-	newRoot.Reset()
+	proto.Reset(newRoot)
 	err = protolator.DeepUnmarshalJSON(bytes.NewReader(buffer.Bytes()), newRoot)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -46,7 +46,7 @@ func bidirectionalMarshal(t *testing.T, doc proto.Message) {
 func TestConfigUpdate(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	blockBin, err := ioutil.ReadFile("testdata/block.pb")
+	blockBin, err := os.ReadFile("testdata/block.pb")
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	block := &cb.Block{}
@@ -85,7 +85,7 @@ func TestIdemix(t *testing.T) {
 func TestBlock(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	blockBin, err := ioutil.ReadFile("testdata/block.pb")
+	blockBin, err := os.ReadFile("testdata/block.pb")
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	block := &cb.Block{}
@@ -134,7 +134,7 @@ func TestEmitDefaultsBug(t *testing.T) {
 							"epoch": "0",
 							"extension": null,
 							"timestamp": null,
-							"tls_cert_hash": null,
+							"tls_cert_hash": "",
 							"tx_id": "",
 							"type": 1,
 							"version": 0
@@ -147,7 +147,7 @@ func TestEmitDefaultsBug(t *testing.T) {
 		]
 	},
 	"header": {
-		"data_hash": null,
+		"data_hash": "",
 		"number": "0",
 		"previous_hash": "Zm9v"
 	},
@@ -299,14 +299,14 @@ func TestStaticMarshal(t *testing.T) {
 	// 	configtxgen -channelID test -outputBlock block.pb -profile SampleSingleMSPSolo -configPath FABRICPATH/sampleconfig
 	// 	configtxgen -configPath FABRICPATH/sampleconfig -inspectBlock block.pb > block.json
 
-	blockBin, err := ioutil.ReadFile("testdata/block.pb")
+	blockBin, err := os.ReadFile("testdata/block.pb")
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	block := &cb.Block{}
 	err = proto.Unmarshal(blockBin, block)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	jsonBin, err := ioutil.ReadFile("testdata/block.json")
+	jsonBin, err := os.ReadFile("testdata/block.json")
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	buf := &bytes.Buffer{}

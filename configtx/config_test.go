@@ -14,11 +14,10 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-config/configtx/orderer"
-
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator"
-	cb "github.com/hyperledger/fabric-protos-go/common"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestNewConfigTx(t *testing.T) {
@@ -233,8 +232,8 @@ func TestNewCreateChannelTx(t *testing.T) {
 	err = proto.Unmarshal(expectedPayload.Data, &expectedData)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	expectedConfigUpdate := cb.ConfigUpdate{}
-	err = proto.Unmarshal(expectedData.ConfigUpdate, &expectedConfigUpdate)
+	expectedConfigUpdate := &cb.ConfigUpdate{}
+	err = proto.Unmarshal(expectedData.ConfigUpdate, expectedConfigUpdate)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	actualPayload := cb.Payload{}
@@ -249,11 +248,11 @@ func TestNewCreateChannelTx(t *testing.T) {
 	err = proto.Unmarshal(actualPayload.Data, &actualData)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	actualConfigUpdate := cb.ConfigUpdate{}
-	err = proto.Unmarshal(actualData.ConfigUpdate, &actualConfigUpdate)
+	actualConfigUpdate := &cb.ConfigUpdate{}
+	err = proto.Unmarshal(actualData.ConfigUpdate, actualConfigUpdate)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(actualConfigUpdate).To(Equal(expectedConfigUpdate))
+	gt.Expect(proto.Equal(actualConfigUpdate, expectedConfigUpdate)).To(BeTrue())
 
 	// setting timestamps to match in ConfigUpdate
 	actualTimestamp := actualHeader.Timestamp
@@ -272,7 +271,7 @@ func TestNewCreateChannelTx(t *testing.T) {
 	expectedEnvelope.Payload, err = proto.Marshal(&expectedPayload)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(envelope).To(Equal(&expectedEnvelope))
+	gt.Expect(proto.Equal(envelope, &expectedEnvelope)).To(BeTrue())
 }
 
 func TestNewCreateChannelTxFailure(t *testing.T) {

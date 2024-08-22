@@ -9,20 +9,19 @@ package protoext
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-
 	"github.com/hyperledger/fabric-config/protolator/protoext/commonext"
 	"github.com/hyperledger/fabric-config/protolator/protoext/ledger/rwsetext"
 	"github.com/hyperledger/fabric-config/protolator/protoext/mspext"
 	"github.com/hyperledger/fabric-config/protolator/protoext/ordererext"
 	"github.com/hyperledger/fabric-config/protolator/protoext/peerext"
-	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/ledger/rwset"
-	"github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/hyperledger/fabric-protos-go/orderer"
-	"github.com/hyperledger/fabric-protos-go/peer"
-
+	"github.com/hyperledger/fabric-protos-go-apiv2/common"
+	"github.com/hyperledger/fabric-protos-go-apiv2/ledger/rwset"
+	"github.com/hyperledger/fabric-protos-go-apiv2/msp"
+	"github.com/hyperledger/fabric-protos-go-apiv2/orderer"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/protoadapt"
 )
 
 type GenericProtoMessage struct {
@@ -292,12 +291,12 @@ func TestDecorate(t *testing.T) {
 		},
 		{
 			testSpec: "default",
-			msg: &GenericProtoMessage{
+			msg: protoadapt.MessageV2Of(&GenericProtoMessage{
 				GenericField: "test",
-			},
-			expectedReturn: &GenericProtoMessage{
+			}),
+			expectedReturn: protoadapt.MessageV2Of(&GenericProtoMessage{
 				GenericField: "test",
-			},
+			}),
 		},
 	}
 

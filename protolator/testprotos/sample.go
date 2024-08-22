@@ -19,7 +19,7 @@ package testprotos
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 func (som *StaticallyOpaqueMsg) StaticallyOpaqueFields() []string {
