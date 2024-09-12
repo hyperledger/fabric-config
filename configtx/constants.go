@@ -68,6 +68,9 @@ const (
 	// OrdererGroupKey is the group name for the orderer config.
 	OrdererGroupKey = "Orderer"
 
+	// OrderersGroupKey is the group name for the orderer config.
+	OrderersGroupKey = "Orderers"
+
 	// ApplicationGroupKey is the group name for the Application config.
 	ApplicationGroupKey = "Application"
 
