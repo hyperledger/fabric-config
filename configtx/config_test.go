@@ -13,10 +13,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator"
-	cb "github.com/hyperledger/fabric-protos-go/common"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestNewConfigTx(t *testing.T) {
@@ -251,7 +251,7 @@ func TestNewCreateChannelTx(t *testing.T) {
 	err = proto.Unmarshal(actualData.ConfigUpdate, &actualConfigUpdate)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(actualConfigUpdate).To(Equal(expectedConfigUpdate))
+	gt.Expect(&actualConfigUpdate).To(Equal(&expectedConfigUpdate))
 
 	// setting timestamps to match in ConfigUpdate
 	actualTimestamp := actualHeader.Timestamp

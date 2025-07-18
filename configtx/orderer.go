@@ -15,14 +15,14 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/configtx/internal/policydsl"
 	"github.com/hyperledger/fabric-config/configtx/orderer"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	mspa "github.com/hyperledger/fabric-protos-go/msp"
-	ob "github.com/hyperledger/fabric-protos-go/orderer"
-	eb "github.com/hyperledger/fabric-protos-go/orderer/etcdraft"
-	sb "github.com/hyperledger/fabric-protos-go/orderer/smartbft"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
+	mspa "github.com/hyperledger/fabric-protos-go-apiv2/msp"
+	ob "github.com/hyperledger/fabric-protos-go-apiv2/orderer"
+	eb "github.com/hyperledger/fabric-protos-go-apiv2/orderer/etcdraft"
+	sb "github.com/hyperledger/fabric-protos-go-apiv2/orderer/smartbft"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -425,9 +425,7 @@ func (o *OrdererOrg) Configuration() (Organization, error) {
 			return Organization{}, err
 		}
 		ordererEndpoints := make([]string, len(endpointsProtos.Addresses))
-		for i, address := range endpointsProtos.Addresses {
-			ordererEndpoints[i] = address
-		}
+		copy(ordererEndpoints, endpointsProtos.Addresses)
 		org.OrdererEndpoints = ordererEndpoints
 	}
 
@@ -469,6 +467,8 @@ func (o *OrdererGroup) SetConfiguration(ord Orderer) error {
 	return nil
 }
 
+// SetConsenterMapping sets the consenter mapping for the orderer group.
+// It marshals the provided consenter mapping and updates the orderer group's values.
 func (o *OrdererGroup) SetConsenterMapping(consenterMapping []*cb.Consenter) error {
 	val, err := proto.Marshal(&cb.Orderers{
 		ConsenterMapping: consenterMapping,
@@ -873,7 +873,8 @@ func addOrdererValues(ordererGroup *cb.ConfigGroup, o Orderer) error {
 		}
 	case orderer.ConsensusTypeBFT:
 		consenterMapping := []*cb.Consenter{}
-		for _, consenter := range o.ConsenterMapping {
+		for i := range o.ConsenterMapping {
+			consenter := &o.ConsenterMapping[i]
 			consenterMapping = append(consenterMapping, &cb.Consenter{
 				Id:            consenter.Id,
 				Host:          consenter.Host,
@@ -1165,7 +1166,8 @@ func encodeBFTBlockVerificationPolicy(consenterProtos []cb.Consenter, ordererGro
 
 	var identities []*mspa.MSPPrincipal
 	var pols []*cb.SignaturePolicy
-	for i, consenter := range consenterProtos {
+	for i := range consenterProtos {
+		consenter := &consenterProtos[i]
 		pols = append(pols, &cb.SignaturePolicy{
 			Type: &cb.SignaturePolicy_SignedBy{
 				SignedBy: int32(i),

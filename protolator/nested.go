@@ -19,8 +19,8 @@ package protolator
 import (
 	"reflect"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/proto"
 )
 
 func nestedFrom(value interface{}, destType reflect.Type) (reflect.Value, error) {

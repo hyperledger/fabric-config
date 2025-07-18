@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/configtx/orderer"
 	"github.com/hyperledger/fabric-config/protolator"
 	"github.com/hyperledger/fabric-config/protolator/protoext/ordererext"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	ob "github.com/hyperledger/fabric-protos-go/orderer"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
+	ob "github.com/hyperledger/fabric-protos-go-apiv2/orderer"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestNewOrdererGroup(t *testing.T) {
@@ -3637,14 +3637,14 @@ func TestRemoveOrdererPolicyFailures(t *testing.T) {
 
 	tests := []struct {
 		testName      string
-		ordererGrpMod func(cb.ConfigGroup) *cb.ConfigGroup
+		ordererGrpMod func(*cb.ConfigGroup) *cb.ConfigGroup
 		policyName    string
 		expectedErr   string
 	}{
 		{
 			testName: "when removing blockvalidation policy",
-			ordererGrpMod: func(og cb.ConfigGroup) *cb.ConfigGroup {
-				return &og
+			ordererGrpMod: func(og *cb.ConfigGroup) *cb.ConfigGroup {
+				return og
 			},
 			policyName:  BlockValidationPolicyKey,
 			expectedErr: "BlockValidation policy must be defined",
@@ -3656,7 +3656,7 @@ func TestRemoveOrdererPolicyFailures(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			ordererGroup := tt.ordererGrpMod(*ordererGroup)
+			ordererGroup := tt.ordererGrpMod(ordererGroup)
 			if ordererGroup == nil {
 				delete(config.ChannelGroup.Groups, OrdererGroupKey)
 			} else {
