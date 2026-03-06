@@ -1,6 +1,6 @@
 module github.com/hyperledger/fabric-config
 
-go 1.20
+go 1.23.0
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
@@ -11,9 +11,9 @@ require (
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230803162519-f966b187b2e5 // indirect
 	google.golang.org/grpc v1.57.0 // indirect
