@@ -358,8 +358,8 @@ func TestNewCreateChannelTxFailure(t *testing.T) {
 			},
 			channelID: "testchannel",
 			err: errors.New("creating default config template: failed to create application group: " +
-				"invalid signature policy rule: 'ANYY Readers': Cannot transition " +
-				"token types from VARIABLE [ANYY] to VARIABLE [Readers]"),
+				"invalid signature policy rule: 'ANYY Readers': unexpected token Identifier(\"Readers\") " +
+				"(1:6)\n | ANYY Readers\n | .....^"),
 		},
 		{
 			testName: "When creating the default config template with an unknown policy type fails",

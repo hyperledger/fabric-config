@@ -175,8 +175,8 @@ func TestNewApplicationGroupFailure(t *testing.T) {
 					Type: SignaturePolicyType,
 				}
 			},
-			expectedErr: "invalid signature policy rule: 'ANYY Readers': Cannot transition " +
-				"token types from VARIABLE [ANYY] to VARIABLE [Readers]",
+			expectedErr: "invalid signature policy rule: 'ANYY Readers': unexpected token Identifier(\"Readers\") " +
+				"(1:6)\n | ANYY Readers\n | .....^",
 		},
 		{
 			testName: "When ImplicitMetaPolicy type is unknown policy type",
@@ -200,7 +200,7 @@ func TestNewApplicationGroupFailure(t *testing.T) {
 			tt.applicationMod(&application)
 
 			configGrp, err := newApplicationGroupTemplate(application)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err).To(MatchError(ContainSubstring(tt.expectedErr)))
 			gt.Expect(configGrp).To(BeNil())
 		})
 	}

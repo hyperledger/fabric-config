@@ -23,11 +23,11 @@ fi
 
 ## Formatting
 echo "running gofumpt..."
-gofumpt_output="$(gofumpt -l -s "${go_files[@]}")"
+gofumpt_output="$(gofumpt -l "${go_files[@]}")"
 if [ -n "$gofumpt_output" ]; then
     echo "The following files contain gofumpt errors:"
     echo "$gofumpt_output"
-    echo "Please run 'gofumpt -s -w' for these files."
+    echo "Please run 'gofumpt -w' for these files."
     exit 1
 fi
 

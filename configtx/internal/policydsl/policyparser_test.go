@@ -12,9 +12,8 @@ import (
 	"github.com/hyperledger/fabric-config/configtx/internal/policydsl"
 	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
 	mb "github.com/hyperledger/fabric-protos-go-apiv2/msp"
-	"google.golang.org/protobuf/proto"
-
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestOutOf1(t *testing.T) {
@@ -257,13 +256,13 @@ func TestBadStringsNoPanic(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	_, err := policydsl.FromString("OR('A.member', Bmember)") // error after 1st Evaluate()
-	gt.Expect(err).To(MatchError("unrecognized token 'Bmember' in policy string"))
+	gt.Expect(err).To(MatchError(ContainSubstring("unknown name Bmember")))
 
 	_, err = policydsl.FromString("OR('A.member', 'Bmember')") // error after 2nd Evalute()
-	gt.Expect(err).To(MatchError("unrecognized token 'Bmember' in policy string"))
+	gt.Expect(err).To(MatchError(ContainSubstring("unknown name Bmember")))
 
 	_, err = policydsl.FromString(`OR('A.member', '\'Bmember\'')`) // error after 3rd Evalute()
-	gt.Expect(err).To(MatchError("unrecognized token 'Bmember' in policy string"))
+	gt.Expect(err).To(MatchError(ContainSubstring("unknown name Bmember")))
 }
 
 func TestNodeOUs(t *testing.T) {
@@ -339,7 +338,7 @@ func TestOutOfErrorCase(t *testing.T) {
 		{
 			testName:     "1st NewEvaluableExpressionWithFunctions() returns an error",
 			policyString: "",
-			expectedErr:  "Unexpected end of expression",
+			expectedErr:  "unexpected token EOF",
 		},
 		{
 			testName:     "outof() if len(args)<2",
@@ -354,7 +353,7 @@ func TestOutOfErrorCase(t *testing.T) {
 		{
 			testName:     "oufof() switch default. 2nd arg is not string.",
 			policyString: "OutOf(1, 2)",
-			expectedErr:  "unexpected type float64",
+			expectedErr:  "unexpected type int",
 		},
 		{
 			testName:     "firstPass() switch default",
@@ -369,17 +368,17 @@ func TestOutOfErrorCase(t *testing.T) {
 		{
 			testName:     "secondPass() switch args[1].(type) default",
 			policyString: `OutOf(1, '\'1\'')`,
-			expectedErr:  "unrecognized type, expected a principal or a policy, got float64",
+			expectedErr:  "unrecognized type, expected a principal or a policy, got int",
 		},
 		{
 			testName:     "2nd NewEvaluateExpressionWithFunction() returns an error",
 			policyString: `''`,
-			expectedErr:  "Unexpected end of expression",
+			expectedErr:  "unexpected token EOF",
 		},
 		{
 			testName:     "3rd NewEvaluateExpressionWithFunction() returns an error",
 			policyString: `'\'\''`,
-			expectedErr:  "Unexpected end of expression",
+			expectedErr:  "unexpected token EOF",
 		},
 	}
 
@@ -389,7 +388,7 @@ func TestOutOfErrorCase(t *testing.T) {
 
 			p, err := policydsl.FromString(tt.policyString)
 			gt.Expect(p).To(BeNil())
-			gt.Expect(err).To(MatchError(tt.expectedErr))
+			gt.Expect(err).To(MatchError(ContainSubstring(tt.expectedErr)))
 		})
 	}
 }
@@ -435,7 +434,7 @@ func TestSecondPassBoundaryCheck(t *testing.T) {
 	// Prohibit t<0
 	p0, err0 := policydsl.FromString("OutOf(-1, 'A.member', 'B.member')")
 	gt.Expect(p0).To(BeNil())
-	gt.Expect(err0).To(MatchError("invalid t-out-of-n predicate, t -1, n 2"))
+	gt.Expect(err0).To(MatchError(ContainSubstring("invalid t-out-of-n predicate, t -1, n 2")))
 
 	// Permit t==0 : always satisfied policy
 	// There is no clear usecase of t=0, but somebody may already use it, so we don't treat as an error.
@@ -472,7 +471,7 @@ func TestSecondPassBoundaryCheck(t *testing.T) {
 	// Prohibit t>n + 1
 	p3, err3 := policydsl.FromString("OutOf(4, 'A.member', 'B.member')")
 	gt.Expect(p3).To(BeNil())
-	gt.Expect(err3).To(MatchError("invalid t-out-of-n predicate, t 4, n 2"))
+	gt.Expect(err3).To(MatchError(ContainSubstring("invalid t-out-of-n predicate, t 4, n 2")))
 }
 
 // protoMarshalOrPanic serializes a protobuf message and panics if this
