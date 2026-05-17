@@ -224,7 +224,8 @@ func Example_policies() {
 		configtx.Policy{
 			Type: configtx.ImplicitMetaPolicyType,
 			Rule: "MAJORITY Endorsement",
-		})
+		},
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -247,7 +248,8 @@ func Example_policies() {
 		configtx.Policy{
 			Type: configtx.ImplicitMetaPolicyType,
 			Rule: "MAJORITY Endorsement",
-		})
+		},
+	)
 	if err != nil {
 		panic(err)
 	}
