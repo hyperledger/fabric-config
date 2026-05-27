@@ -97,7 +97,8 @@ func TestCommonProtolator(t *testing.T) {
 	// Header
 	var header *Header
 	gt.Expect(header.StaticallyOpaqueFields()).To(Equal(
-		[]string{"channel_header", "signature_header"}))
+		[]string{"channel_header", "signature_header"},
+	))
 
 	msg, err = header.StaticallyOpaqueFieldProto("badproto")
 	gt.Expect(msg).To(BeNil())
